@@ -4,6 +4,16 @@
 > put it on a projector, and don't let a participant's agent read it — see
 > [/AGENTS.md](../../AGENTS.md).
 
+> **Before the day: turn the hard block back on.** `AGENTS.md` asks agents
+> not to read this directory; the enforced version is a deny rule, currently
+> disabled so the docs can be edited. Restore it in
+> `.claude/settings.json`:
+> ```json
+> { "permissions": { "deny": ["Read(./workshop-docs/**)"] } }
+> ```
+> With it active, Claude Code can't read or `find` in here at all. Leave it
+> off while you're writing these docs — it blocks you too.
+
 **Host:** Raphael Manke, Dash0 · 120 minutes · developers new to
 OpenTelemetry.
 
