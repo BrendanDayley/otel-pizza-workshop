@@ -93,16 +93,13 @@ Open http://localhost:8080 and order a pizza. Everything works, but you're flyin
 
 **This is where YOU instrument the app!** 
 
-Follow the step-by-step guide on **[INSTRUMENTATION-STEPS.md](./INSTRUMENTATION-STEPS.md)**.
+There is no copy-paste guide. You direct an agent to instrument the app,
+review what it proposes, and merge it.
 
-You'll:
-1. Install OpenTelemetry packages using npm (2 packages per service)
-2. Configure auto-instrumentation in Dockerfiles  
-3. Create OpenTelemetry Collector config
-4. Update docker-compose.yml
-5. Rebuild and run!
-
-**Total code changes: 0 lines!** Just npm install and configuration.
+What has to end up in place:
+1. OpenTelemetry auto-instrumentation on all three Node services
+2. An OpenTelemetry Collector in `docker-compose.yml`
+3. Traces exported to Dash0
 
 ### Part 3: Explore Distributed Traces
 

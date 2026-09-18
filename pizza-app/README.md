@@ -53,13 +53,10 @@ You can see that things are happening, but you have no visibility into the detai
 
 ## Adding Observability
 
-Follow the **[INSTRUMENTATION-STEPS.md](../INSTRUMENTATION-STEPS.md)** guide to add OpenTelemetry observability to this app.
-
-You'll:
-1. Install OpenTelemetry packages (2 per service)
-2. Configure auto-instrumentation in Dockerfiles
-3. Set up an OpenTelemetry Collector
-4. Connect to [Dash0](www.dash0.com)
+You will add OpenTelemetry to this app by directing an agent, not by
+following a snippet list. The end state: auto-instrumentation on all three
+services, a Collector in `docker-compose.yml`, and traces arriving in
+[Dash0](https://www.dash0.com).
 
 
 ## Debugging Scenarios
