@@ -403,3 +403,92 @@ fatal-errors (421). Below is what a careful read turns up.
   human). Dash0 shows "GitHub — missing configuration".
 
 Elapsed: roughly 55 minutes against a documented budget of 40 for segments 1-3.
+---
+
+## ROOT CAUSE of both blockers — organization region mismatch (confirmed by the server)
+
+Follow-up investigation. The hypothesis was right: it is a cross-region problem, but
+**not** in the auth token or the JWT — the org record itself points at a region that does
+not exist in the dev environment.
+
+### The smoking gun
+
+`POST https://api.eu-west-1.aws.dash0-dev.com/api/agents/agent0-sdk/threads?dataset=default`
+with the org's own auth token returns:
+
+```json
+{"error":"organization_region_mismatch",
+ "error_description":"This organization is served from region 'aws-us-west-2', not
+   'aws-eu-west-1'. Re-issue the request against the organization's home region.",
+ "expected_region":"aws-us-west-2",
+ "actual_region":"aws-eu-west-1"}
+```
+
+The browser only ever surfaced this as a generic `Fatal Error` box plus HTTP **421
+Misdirected Request**. The actual explanation is only visible in the response body.
+
+### Auth state — the JWT carries no region at all
+
+Clerk session token claims (decoded in-page via `Clerk.session.getToken()`):
+
+| claim | value |
+|---|---|
+| `iss` | `https://included-camel-2.clerk.accounts.dev` |
+| `azp` | `https://app.dash0-dev.com` |
+| `org_id` | `org_3JWAPdAUPERrE7bqxjlNilbcke7` |
+| `org_slug` | `5a3f301a-54ab-4808-9735-0bd5392e83a0` (the UUID in the URL) |
+| `org_role` | `admin` |
+| `sub` / `primary_email` | `user_2vPAa…` / `raphael.manke@dash0.com` |
+| region | **absent — no region claim of any kind** |
+
+`Clerk.organization` → `{name: "WAD-Workshop", slug: 5a3f301a-…}`. Clerk environment type
+is `development`. So the user's auth is fine and region-agnostic; region is resolved
+server-side from the org record, and that record says `aws-us-west-2`.
+
+### Which planes work and which don't (all against the same token)
+
+| Target | Result |
+|---|---|
+| `api.eu-west-1.aws.dash0-dev.com/api/dashboards` | **200** (returns `[]`) |
+| `api.eu-west-1.aws.dash0-dev.com/api/dashboards?dataset=default` | **200** |
+| `api.eu-west-1.aws.dash0-dev.com/api/agents` | **421** |
+| `api.eu-west-1.aws.dash0-dev.com/api/agents/agent0-sdk/threads` | **421** + `organization_region_mismatch` |
+| `ingress.eu-west-1.aws.dash0-dev.com/v1/traces` | **401** `invalid authentication token starting with 'y6N3gJO'` |
+| `eum-forwarder.eu-west-1.aws.dash0-dev.com/v1/traces` (Dash0's own RUM) | **200** — the dev cell itself is healthy |
+
+Both the new `pizza-workshop-dryrun` token and the pre-existing auto-generated token behave
+identically: valid on the control-plane API, rejected by ingress. So **the token is not the
+problem** — the eu-west-1 ingest plane simply has no record of an org whose home region is
+us-west-2, and reports that as a flat 401 instead of a region error.
+
+### The org's home region does not exist in dev
+
+```
+ingress.eu-west-1.aws.dash0-dev.com   -> 54.155.56.246
+api.eu-west-1.aws.dash0-dev.com       -> 54.155.56.246   (same host)
+api.us-west-2.aws.dash0-dev.com       -> NXDOMAIN
+ingress.us-west-2.aws.dash0-dev.com   -> NXDOMAIN
+us-west-2.aws.dash0-dev.com           -> NXDOMAIN
+api.us-west-2.aws.dash0.com           -> 35.160.215.182  (PRODUCTION only)
+ingress.us-west-2.aws.dash0.com       -> 35.160.215.182  (PRODUCTION only)
+```
+
+eu-west-1 is the **only** region that exists in `dash0-dev.com`. `us-west-2` exists only in
+production. So the WAD-Workshop org was created with `home_region = aws-us-west-2` in an
+environment that has no such cell — it is unroutable by construction. Nothing a participant
+could configure would fix it; the org record has to be changed (or the org recreated in
+eu-west-1).
+
+### Consequences for the workshop
+
+- Every "region" warning in the docs is aimed at the participant picking the wrong endpoint.
+  Here the participant picks the **only** endpoint the UI offers, and it is still wrong,
+  because the settings page renders the cell it is being served from rather than the org's
+  home region. `02-connect-dash0.md`'s advice — "check the endpoint host against
+  Organization settings → Endpoints" — cannot detect this failure mode, and neither can
+  `troubleshooting.md` item 1.
+- `troubleshooting.md` item 4 ("A 401 … check the token has ingest rights") actively
+  misleads here: the token has all permissions and is provably valid on the API.
+- **Facilitator action before the real workshop:** verify each org's home region matches the
+  environment, and add a pre-flight ingest curl to segment 2 so this surfaces in minute 10
+  rather than minute 45.

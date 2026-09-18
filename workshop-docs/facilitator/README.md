@@ -133,20 +133,47 @@ A full participant dry run on **2026-09-18** got through segment 1 exactly
 as written, then stopped dead in segment 2/3 on two environment faults.
 Neither is a docs problem. Both must be fixed before a room sits down.
 
-1. **Ingest returns 401.** A token created seconds earlier in the
-   WAD-Workshop org on `dash0-dev`, sent with the exact `curl` the Endpoints
-   page prints:
-   `POST https://ingress.eu-west-1.aws.dash0-dev.com/v1/traces` →
-   `401 {"code":16,"message":"invalid authentication token starting with ..."}`.
-   Retried with and without `Bearer`, with and without the dataset header,
-   with empty and real payloads. The org's pre-existing auto-generated token
-   fails identically.
-2. **Agent0 in the app returns 421.** Submitting Prompt 1 renders a
-   `Fatal Error` with
-   `421 ... POST https://api.eu-west-1.aws.dash0-dev.com/api/agents/agent0-sdk/threads`.
-   Reproducible. A 421 on the org's own API host suggests the org is being
-   addressed on a cluster that doesn't own it — plausibly the same root
-   cause as the 401.
+### Root cause: the org's home region doesn't exist in that environment
+
+Both faults are one fault. The API says so directly, in a response body the
+UI never shows:
+
+```json
+{"error":"organization_region_mismatch",
+ "error_description":"This organization is served from region 'aws-us-west-2',
+   not 'aws-eu-west-1'. Re-issue the request against the organization's home region.",
+ "expected_region":"aws-us-west-2","actual_region":"aws-eu-west-1"}
+```
+
+The WAD-Workshop org was created with `home_region = aws-us-west-2`, but
+**`us-west-2` does not exist in `dash0-dev.com`** — `api.us-west-2.aws.dash0-dev.com`
+and `ingress.us-west-2.aws.dash0-dev.com` are both NXDOMAIN; that region
+only exists in production. eu-west-1 is the sole dev cell. The org is
+unroutable by construction.
+
+How it surfaced:
+
+1. **Ingest 401.** `POST ingress.eu-west-1.aws.dash0-dev.com/v1/traces` →
+   `401 invalid authentication token`. Misleading: eu-west-1's ingest plane
+   has no record of a us-west-2 org and reports that as a bare auth failure.
+   **The token was never the problem** — the same token returns 200 on
+   `/api/dashboards` on the same host.
+2. **Agent0 421.** `POST .../api/agents/agent0-sdk/threads` → 421, body as
+   above. The browser showed only `Fatal Error`.
+
+The dev cell itself is healthy — Dash0's own RUM forwarder accepted spans on
+the same host.
+
+**Nothing a participant can configure fixes this.** The org record has to be
+corrected, or the org recreated in eu-west-1. Verify every participant org's
+home region matches the environment it's served from before the day.
+
+**And note what this breaks in our own advice:** the Endpoints page shows
+the cell it is *served from*, not the org's home region, so "check your
+endpoint against Organization settings → Endpoints" cannot detect it. The
+participant picks the only endpoint offered and it is still wrong. The
+pre-flight curl in segment 2 is the only thing that catches it.
+
 3. **MCP pointed at a different organisation** — production
    `dash0-development`, 13 datasets — so Agent0 over MCP worked but couldn't
    see the workshop org at all. Segment 5's "ask from both places" would

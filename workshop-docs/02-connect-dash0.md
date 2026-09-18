@@ -75,9 +75,25 @@ gRPC. Same credentials either way.
 | You get | Meaning |
 |---|---|
 | `200` | Good. Continue. |
-| `401` | Token is wrong, or belongs to a different organization. |
+| `401` | Usually the token — but **not always.** If you just created it and copied it carefully, see below. |
 | `404` / connection failure | Wrong region or wrong host. |
-| `421` | The organization is being addressed on the wrong cluster — **tell your host, this is not something you can fix.** |
+| `421` | Your organization is served from a different region than the one you're calling. **Not yours to fix — tell your host.** |
+
+**If you get a 401 you can't explain**, check whether the token is valid at
+all by calling a non-ingest endpoint with it:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' \
+  -H "Authorization: Bearer $DASH0_AUTH_TOKEN" \
+  "https://api.<region>.aws.dash0.com/api/dashboards"
+```
+
+**`200` here but `401` on ingest means your token is fine** and your
+organization isn't reachable from this region. That's a host problem, not a
+you problem — say so and stop. A wrong region can present as a flat `401`
+rather than anything region-shaped, and the Endpoints page won't reveal it,
+because it shows the region you're *served from*, not your organization's
+home region.
 
 **Stop here if this doesn't return 200.** Everything from segment 3 onward
 depends on it, and every downstream symptom will look like an

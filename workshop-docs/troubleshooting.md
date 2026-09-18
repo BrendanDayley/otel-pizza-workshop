@@ -87,9 +87,14 @@ In this order — the first one accounts for most cases:
    docker compose exec order-service env | grep -i otel
    ```
 
-5. **Auth token.** A 401 or 403 in the collector logs. Check the token has
-   ingest rights, and that `.env` is actually being read — `docker compose
-   config` shows the resolved values.
+5. **Auth token.** A 401 or 403 in the collector logs. Check `.env` is
+   actually being read — `docker compose config` shows the resolved values.
+
+   **Don't assume a 401 means the token is wrong.** If the same token gets a
+   `200` from `/api/dashboards` but a `401` from ingest, the token is fine
+   and your organization isn't served from the region you're sending to.
+   The [segment 2 check](02-connect-dash0.md) tells them apart. That one is
+   a host problem — stop and report it rather than regenerating tokens.
 
 6. **You're looking at the wrong dataset.** Especially in a shared
    organisation.
