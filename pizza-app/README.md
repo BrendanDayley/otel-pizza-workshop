@@ -1,6 +1,6 @@
 # Pizza Order Tracker
 
-This is a simple pizza ordering system with 3 microservices to help learning observability.
+A pizza ordering system built from three microservices and a web frontend.
 
 ## What's Inside
 
@@ -25,17 +25,23 @@ This is a simple pizza ordering system with 3 microservices to help learning obs
 └─────────────┘     └─────────────┘     └─────────────┘
 ```
 
-## Running the App (Without Observability)
+## Running the App
 
 ```bash
 docker compose up
 ```
 
-Then open http://localhost:8080 and order a pizza!
+Then open http://localhost:8080 and order a pizza.
 
-## The Problem: Black Box
+To stop it:
 
-If you look at the logs in your terminal you'll see messages like:
+```bash
+docker compose down
+```
+
+## Watching What Happens
+
+The terminal shows all four services interleaved:
 
 ```
 order-service    | Order received: PIZZA-123...
@@ -43,52 +49,32 @@ kitchen-service  | Starting to cook...
 delivery-service | Assigning driver...
 ```
 
-**But you can't answer**:
-- How long did each step take?
-- Which service is the bottleneck?
-- How do these operations relate?
-- What happens when there's an error?
+One service on its own:
 
-You can see that things are happening, but you have no visibility into the details. **This is a black box!** 
+```bash
+docker compose logs -f kitchen-service
+```
 
-## Adding Observability
-
-You will add OpenTelemetry to this app by directing an agent, not by
-following a snippet list. The end state: auto-instrumentation on all three
-services, a Collector in `docker-compose.yml`, and traces arriving in
-[Dash0](https://www.dash0.com).
-
-
-## Debugging Scenarios
-
-Once you've added observability, try these scenarios:
+## Failure Modes You Can Switch On
 
 ### Slow Kitchen (Oven is Broken)
 ```bash
 SLOW_KITCHEN=true docker compose up
 ```
 
-Order a pizza and use Dash0 to find which service is slow!
+Every pizza takes about five seconds longer to cook.
 
 ### No Drivers Available
 ```bash
 NO_DRIVERS=true docker compose up
 ```
 
-See how errors appear in traces.
-
-### Random Errors (20% failure rate)
-```bash
-ERROR_RATE=0.2 docker compose up
-```
-
-Watch how distributed tracing helps you debug intermittent issues.
+Delivery has nobody to assign, so orders fail.
 
 ## Services Overview
 
 ### Order Service
 - Receives orders from the frontend
-- Validates the order
 - Calls Kitchen Service to check availability and cook
 - Calls Delivery Service to assign a driver
 - Returns order confirmation
@@ -114,7 +100,6 @@ Watch how distributed tracing helps you debug intermittent issues.
 - **Express** - Web framework
 - **Axios** - HTTP client
 - **Docker** - Containerization
-- **OpenTelemetry** - Observability (after instrumentation)
 
 ## Ports
 
@@ -122,7 +107,3 @@ Watch how distributed tracing helps you debug intermittent issues.
 - `3001` - Kitchen Service
 - `3002` - Delivery Service
 - `8080` - Frontend
-- `4317` - OpenTelemetry Collector (gRPC) - after instrumentation
-- `4318` - OpenTelemetry Collector (HTTP) - after instrumentation
-
-Happy observing!
