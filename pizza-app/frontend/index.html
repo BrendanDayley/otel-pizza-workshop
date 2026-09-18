@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pizza Order Tracker</title>
+    <!-- Order Service base URL. Leave empty to auto-detect (same host, port 3000).
+         Set it explicitly if the Order Service is not on the machine serving this page,
+         e.g. content="https://my-vm.example.com:3000" -->
+    <meta name="order-api-url" content="">
     <style>
         * {
             margin: 0;
@@ -206,6 +210,19 @@
     </div>
     
     <script>
+        // Order Service base URL, in priority order:
+        //   1. ?api=... in this page's query string   (quick override, no rebuild)
+        //   2. window.ORDER_API_URL                   (set it from an injected script)
+        //   3. <meta name="order-api-url" content>    (edit index.html / bake into the image)
+        //   4. same host as this page, port 3000      (works on localhost AND on a VM/Codespace)
+        const ORDER_API_URL = (
+            new URLSearchParams(window.location.search).get('api')
+            || window.ORDER_API_URL
+            || document.querySelector('meta[name="order-api-url"]').content
+            || `${window.location.protocol}//${window.location.hostname}:3000`
+        ).replace(/\/+$/, '');
+        console.log('Order Service:', ORDER_API_URL);
+
         const form = document.getElementById('orderForm');
         const loading = document.getElementById('loading');
         const result = document.getElementById('result');
@@ -223,7 +240,7 @@
             form.querySelector('button').disabled = true;
             
             try {
-                const response = await fetch('http://localhost:3000/order', {
+                const response = await fetch(`${ORDER_API_URL}/order`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

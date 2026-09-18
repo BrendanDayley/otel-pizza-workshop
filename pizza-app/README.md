@@ -28,7 +28,7 @@ This is a simple pizza ordering system with 3 microservices to help learning obs
 ## Running the App (Without Observability)
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 Then open http://localhost:8080 and order a pizza!
@@ -68,21 +68,21 @@ Once you've added observability, try these scenarios:
 
 ### Slow Kitchen (Oven is Broken)
 ```bash
-SLOW_KITCHEN=true docker-compose up
+SLOW_KITCHEN=true docker compose up
 ```
 
 Order a pizza and use Dash0 to find which service is slow!
 
 ### No Drivers Available
 ```bash
-NO_DRIVERS=true docker-compose up
+NO_DRIVERS=true docker compose up
 ```
 
 See how errors appear in traces.
 
 ### Random Errors (20% failure rate)
 ```bash
-ERROR_RATE=0.2 docker-compose up
+ERROR_RATE=0.2 docker compose up
 ```
 
 Watch how distributed tracing helps you debug intermittent issues.

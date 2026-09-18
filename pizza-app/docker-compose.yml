@@ -1,4 +1,12 @@
-version: '3.8'
+# Pizza Order Tracker - workshop stack
+#
+# Compose reads variable values (DASH0_AUTH_TOKEN, DASH0_ENDPOINT, SLOW_KITCHEN,
+# NO_DRIVERS, ...) from the `.env` file that sits NEXT TO THIS FILE, i.e.
+# `pizza-app/.env`. Create it from inside pizza-app/:
+#
+#     cp .env.template .env
+#
+# An `.env` anywhere else (the repo root, for example) is NOT read.
 
 services:
   order-service:
@@ -8,9 +16,21 @@ services:
     environment:
       - KITCHEN_SERVICE_URL=http://kitchen-service:3001
       - DELIVERY_SERVICE_URL=http://delivery-service:3002
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
     depends_on:
-      - kitchen-service
-      - delivery-service
+      kitchen-service:
+        condition: service_healthy
+      delivery-service:
+        condition: service_healthy
 
   kitchen-service:
     build: ./kitchen-service
@@ -18,6 +38,16 @@ services:
       - "3001:3001"
     environment:
       - SLOW_KITCHEN=${SLOW_KITCHEN:-false}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3001/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
   delivery-service:
     build: ./delivery-service
@@ -25,10 +55,21 @@ services:
       - "3002:3002"
     environment:
       - NO_DRIVERS=${NO_DRIVERS:-false}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3002/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
 
   frontend:
     build: ./frontend
     ports:
       - "8080:80"
     depends_on:
-      - order-service
+      order-service:
+        condition: service_healthy

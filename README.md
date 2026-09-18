@@ -20,9 +20,24 @@ Learn how to add OpenTelemetry observability to your applications with zero code
 
 ### Step 1: Clone the Repository
 
+**Fork first, then clone your fork.** You need to own the remote: the last stage of
+this workshop has an AI agent open a pull request against *your* repository.
+
+1. Open <https://github.com/juliafmorgado/otel-pizza-workshop> and click **Fork**
+   (top right). Keep the default name, `otel-pizza-workshop`.
+
+2. Clone **your** fork and add the original as `upstream`:
+
 ```bash
-git clone [otel-pizza-workshop]
-cd [otel-pizza-workshop]
+# replace YOUR-USERNAME with your GitHub username
+git clone https://github.com/YOUR-USERNAME/otel-pizza-workshop.git
+cd otel-pizza-workshop
+
+# keep a link to the original, so you can pull in fixes during the workshop
+git remote add upstream https://github.com/juliafmorgado/otel-pizza-workshop.git
+
+# sanity check: origin = your fork, upstream = the original
+git remote -v
 ```
 
 ### Step 2: Create Your Dash0 Account
@@ -42,11 +57,16 @@ cd [otel-pizza-workshop]
 
 ### Step 4: Configure the Workshop
 
+The `.env` file has to live in **`pizza-app/`** - that is the directory Docker
+Compose runs from, and Compose only reads the `.env` that sits next to
+`docker-compose.yml`. An `.env` in the repo root is ignored.
+
 ```bash
+cd pizza-app
 cp .env.template .env
 ```
 
-Edit `.env` and add your Dash0 token:
+Edit `pizza-app/.env` and add your Dash0 token:
 
 ```bash
 DASH0_AUTH_TOKEN=auth_your_token_here
@@ -63,8 +83,8 @@ DASH0_ENDPOINT=https://ingress.us-west-2.aws.dash0.com:4317
 Run the app without observability and see why you need it.
 
 ```bash
-cd pizza-app
-docker-compose up
+cd pizza-app   # you may already be here from Step 4
+docker compose up
 ```
 
 Open http://localhost:8080 and order a pizza. Everything works, but you're flying blind!
@@ -99,7 +119,7 @@ Practice debugging with your new observability superpowers:
 Ctrl+C
 
 # Enable slow kitchen mode
-SLOW_KITCHEN=true docker-compose up
+SLOW_KITCHEN=true docker compose up
 ```
 
 Order a pizza and find which service is slow using traces!
@@ -111,20 +131,20 @@ Try these scenarios to practice debugging:
 
 ```bash
 # Slow kitchen (oven is broken)
-SLOW_KITCHEN=true docker-compose up
+SLOW_KITCHEN=true docker compose up
 
 # No drivers available
-NO_DRIVERS=true docker-compose up
+NO_DRIVERS=true docker compose up
 
 # Random errors (20% failure rate)
-ERROR_RATE=0.2 docker-compose up
+ERROR_RATE=0.2 docker compose up
 ```
 
 ## Troubleshooting
 
 **Docker issues?**
 - Make sure Docker Desktop is running
-- Try `docker-compose down` then `docker-compose up` again
+- Try `docker compose down` then `docker compose up` again
 
 **Can't see traces in Dash0?**
 - Check your `.env` file has the correct token
@@ -134,8 +154,8 @@ ERROR_RATE=0.2 docker-compose up
 
 **Services not starting?**
 - Check if ports 3000, 3001, 3002, 8080 are available
-- Run `docker-compose logs` to see error messages
-- Try `docker-compose build --no-cache`
+- Run `docker compose logs` to see error messages
+- Try `docker compose build --no-cache`
 
 **Build errors?**
 - Make sure you saved all files after editing

@@ -21,7 +21,7 @@ Navigate to the order service and install the packages:
 
 ```bash
 cd pizza-app/order-service
-npm install @opentelemetry/api @opentelemetry/auto-instrumentations-node
+npm install @opentelemetry/api@1.9.1 @opentelemetry/auto-instrumentations-node@0.80.0
 ```
 
 **What just happened:**
@@ -37,7 +37,7 @@ Open `pizza-app/order-service/Dockerfile` in your editor.
 
 **Find this section:**
 ```dockerfile
-FROM node:20-alpine
+FROM node:20.20.2-alpine3.23
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -74,7 +74,7 @@ Now you would do the same steps for the other two services (but we've already do
 **Install packages:**
 ```bash
 cd ../kitchen-service
-npm install @opentelemetry/api @opentelemetry/auto-instrumentations-node
+npm install @opentelemetry/api@1.9.1 @opentelemetry/auto-instrumentations-node@0.80.0
 ```
 
 **Edit `pizza-app/kitchen-service/Dockerfile`:**
@@ -96,7 +96,7 @@ ENV OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 **Install packages:**
 ```bash
 cd ../delivery-service
-npm install @opentelemetry/api @opentelemetry/auto-instrumentations-node
+npm install @opentelemetry/api@1.9.1 @opentelemetry/auto-instrumentations-node@0.80.0
 cd ../..
 ```
 
@@ -136,9 +136,17 @@ receivers:
         endpoint: 0.0.0.0:4318
 
 processors:
+  # memory_limiter must be FIRST in every pipeline so it can reject data
+  # before the collector does any work on it.
   memory_limiter:
     check_interval: 1s
     limit_mib: 512
+  # batch must come AFTER memory_limiter. It groups spans/metrics/logs into
+  # fewer, larger export requests - fewer round trips, much less CPU.
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+    send_batch_max_size: 1024
 
 exporters:
   otlp:
@@ -150,15 +158,36 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [memory_limiter]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
       exporters: [otlp]
 ```
 
 **What this does:**
 - **Receivers** - Accepts telemetry from your services via OTLP (gRPC and HTTP)
-- **Processors** - `memory_limiter` prevents the collector from using too much memory (good practice!)
+- **Processors**
+  - `memory_limiter` prevents the collector from using too much memory (good practice!)
+  - `batch` batches telemetry before export. Always list it *after* `memory_limiter`.
 - **Exporters** - Sends to Dash0 using your credentials
-- **Pipelines** - Connects receivers → processors → exporters
+- **Pipelines** - Connects receivers → processors → exporters. There is one pipeline
+  per signal: **traces**, **metrics** and **logs**. All three share the same receiver
+  and exporter here, so a single OTLP endpoint carries everything.
+
+> [!NOTE]
+>
+> The metrics and logs pipelines only carry data if the SDK actually emits those
+> signals. `@opentelemetry/auto-instrumentations-node/register` exports traces by
+> default; if you see no metrics or logs in Dash0, set `OTEL_METRICS_EXPORTER=otlp`
+> and `OTEL_LOGS_EXPORTER=otlp` alongside the other `OTEL_*` variables in your
+> Dockerfiles. A pipeline that receives nothing is not an error - the collector just
+> logs that it started.
 
 ---
 
@@ -170,7 +199,9 @@ Edit `pizza-app/docker-compose.yml` and add the collector service.
 
 ```yaml
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    # Pinned on purpose: `:latest` means a different collector for every
+    # participant, and a different one again next month.
+    image: otel/opentelemetry-collector-contrib:0.161.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     volumes:
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
@@ -182,12 +213,16 @@ Edit `pizza-app/docker-compose.yml` and add the collector service.
       - DASH0_AUTH_TOKEN=${DASH0_AUTH_TOKEN}
 ```
 
-**Also add `depends_on` to each service:**
+**Also add `otel-collector` to `depends_on` of each service:**
 
-For `order-service`, `kitchen-service`, and `delivery-service`, add:
+`docker-compose.yml` uses the long `depends_on` form (a map, not a list) so it can
+wait for health, so add the collector the same way. The collector image has no shell
+to health-check with, so `service_started` is the right condition for it:
+
 ```yaml
     depends_on:
-      - otel-collector
+      otel-collector:
+        condition: service_started
 ```
 
 **Example for order-service:**
@@ -199,11 +234,19 @@ For `order-service`, `kitchen-service`, and `delivery-service`, add:
     environment:
       - KITCHEN_SERVICE_URL=http://kitchen-service:3001
       - DELIVERY_SERVICE_URL=http://delivery-service:3002
+    healthcheck:
+      # ... leave the existing healthcheck alone ...
     depends_on:
-      - kitchen-service
-      - delivery-service
-      - otel-collector  # Add this line
+      kitchen-service:
+        condition: service_healthy
+      delivery-service:
+        condition: service_healthy
+      otel-collector:              # add these
+        condition: service_started #  two lines
 ```
+
+Do the same for `kitchen-service` and `delivery-service` (they have no `depends_on`
+yet, so add the whole block).
 
 ---
 
@@ -214,10 +257,10 @@ For `order-service`, `kitchen-service`, and `delivery-service`, add:
 cd pizza-app
 
 # Rebuild with new dependencies
-docker-compose build
+docker compose build
 
 # Start everything
-docker-compose up
+docker compose up
 ```
 
 ---
@@ -248,7 +291,7 @@ When you're done with the workshop, you can stop and clean up the Docker contain
 ### Stop Services
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 This stops and removes all containers, but keeps the images.
@@ -259,10 +302,10 @@ If you want to remove everything including images and volumes:
 
 ```bash
 # Stop and remove containers, networks, and volumes
-docker-compose down -v
+docker compose down -v
 
 # Remove images (optional - saves disk space)
-docker-compose down --rmi all
+docker compose down --rmi all
 ```
 
 ### Quick Restart
@@ -271,10 +314,10 @@ If you want to restart later:
 
 ```bash
 # Start services again
-docker-compose up
+docker compose up
 
 # Or in detached mode (background)
-docker-compose up -d
+docker compose up -d
 ```
 
 ---
@@ -286,17 +329,17 @@ docker-compose up -d
 - Check `.env` has correct `DASH0_AUTH_TOKEN`
 - Verify `DASH0_ENDPOINT` matches your region
 - Wait 10-15 seconds for traces to appear
-- Check collector logs: `docker-compose logs otel-collector`
+- Check collector logs: `docker compose logs otel-collector`
 
 **Build errors?**
 - Make sure you saved all files
 - Verify Dockerfile syntax is correct
-- Try `docker-compose build --no-cache`
+- Try `docker compose build --no-cache`
 
 **Services won't start?**
 - Check Docker is running
 - Verify ports aren't in use
-- Run `docker-compose logs` to see errors
+- Run `docker compose logs` to see errors
 
 ---
 
