@@ -7,14 +7,6 @@ RUN npm install
 
 COPY . .
 
-# Enable OpenTelemetry auto-instrumentation
-ENV NODE_OPTIONS="--require @opentelemetry/auto-instrumentations-node/register"
-
-# Configure OpenTelemetry
-ENV OTEL_SERVICE_NAME=kitchen-service
-ENV OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-ENV OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
-
 EXPOSE 3001
 
 CMD ["npm", "start"]

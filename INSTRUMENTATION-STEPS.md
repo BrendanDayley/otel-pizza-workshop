@@ -67,7 +67,13 @@ ENV OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 
 ## Step 2: Instrument Kitchen and Delivery Services
 
-Now you would do the same steps for the other two services (but we've already done it for you):
+Now do exactly the same two steps for the other two services. Nothing is pre-done -
+all three services start out uninstrumented, and all three are yours to instrument.
+
+Only two things change per service: the **port** in `EXPOSE` (leave it alone) and the
+value of **`OTEL_SERVICE_NAME`**. Getting that name wrong is the single most common
+mistake here - every span ends up attributed to the wrong service and the trace looks
+like one service calling itself.
 
 ### 2a. Kitchen Service
 
