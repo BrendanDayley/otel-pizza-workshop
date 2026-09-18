@@ -57,7 +57,8 @@ app.post('/order', async (req, res) => {
     console.log(`Assigning driver for order ${orderId}`);
     const deliveryResponse = await axios.post(`${DELIVERY_SERVICE_URL}/assign-driver`, {
       orderId,
-      customerName
+      customerName,
+      size
     });
     
     console.log(`Order ${orderId} completed successfully`);
