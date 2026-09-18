@@ -45,6 +45,13 @@ app.post('/cook', async (req, res) => {
   
   console.log(`Starting to cook order ${orderId}: ${size} ${pizzaType}`);
   
+  if (pizzaType === 'Hawaiian') {
+    return res.status(403).json({
+      error: 'pineapple on pizza is forbidden',
+      orderId
+    });
+  }
+  
   // Check oven temperature
   const ovenStatus = await checkOvenTemperature();
   console.log(`Oven temperature: ${ovenStatus.temperature}°F`);
