@@ -58,18 +58,25 @@ usually not the app:
 
 In this order — the first one accounts for most cases:
 
-1. **Wrong region.** Your endpoint must match the region your organisation is
+1. **Credentials never worked in the first place.** Re-run the `curl` check
+   from the end of [segment 2](02-connect-dash0.md). If that doesn't return
+   `200`, nothing downstream can work and you're debugging the wrong layer.
+   A `421` in particular is not yours to fix — tell the host.
+
+2. **Wrong region.** Your endpoint must match the region your organisation is
    in. The wrong region doesn't error; it accepts the data and you never see
    it. Check the endpoint host against Organization settings → Endpoints.
 
-2. **Collector isn't running.**
+3. **Collector isn't running.**
    ```bash
    docker compose ps
-   docker compose logs otel-collector
    ```
-   An immediate exit means the config didn't parse. The log names the line.
+   There should be a collector container — whatever the agent named it in
+   segment 3. If there isn't one at all, the PR you merged didn't add it,
+   and that's your problem right there. If it's there but exited, its config
+   didn't parse; `docker compose logs <that-container>` names the line.
 
-3. **Services aren't exporting.** Auto-instrumentation announces itself at
+4. **Services aren't exporting.** Auto-instrumentation announces itself at
    startup:
    ```bash
    docker compose logs order-service | head -30
@@ -80,11 +87,11 @@ In this order — the first one accounts for most cases:
    docker compose exec order-service env | grep -i otel
    ```
 
-4. **Auth token.** A 401 or 403 in the collector logs. Check the token has
+5. **Auth token.** A 401 or 403 in the collector logs. Check the token has
    ingest rights, and that `.env` is actually being read — `docker compose
    config` shows the resolved values.
 
-5. **You're looking at the wrong dataset.** Especially in a shared
+6. **You're looking at the wrong dataset.** Especially in a shared
    organisation.
 
 ## Traces arrive but they're all separate

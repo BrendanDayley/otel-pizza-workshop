@@ -127,6 +127,39 @@ own telemetry and watches the order go through. Let it land before moving on.
 people collapse it into one prompt they lose the only point in the workshop
 where their judgement enters the loop.
 
+## Blockers found in the first dry run
+
+A full participant dry run on **2026-09-18** got through segment 1 exactly
+as written, then stopped dead in segment 2/3 on two environment faults.
+Neither is a docs problem. Both must be fixed before a room sits down.
+
+1. **Ingest returns 401.** A token created seconds earlier in the
+   WAD-Workshop org on `dash0-dev`, sent with the exact `curl` the Endpoints
+   page prints:
+   `POST https://ingress.eu-west-1.aws.dash0-dev.com/v1/traces` →
+   `401 {"code":16,"message":"invalid authentication token starting with ..."}`.
+   Retried with and without `Bearer`, with and without the dataset header,
+   with empty and real payloads. The org's pre-existing auto-generated token
+   fails identically.
+2. **Agent0 in the app returns 421.** Submitting Prompt 1 renders a
+   `Fatal Error` with
+   `421 ... POST https://api.eu-west-1.aws.dash0-dev.com/api/agents/agent0-sdk/threads`.
+   Reproducible. A 421 on the org's own API host suggests the org is being
+   addressed on a cluster that doesn't own it — plausibly the same root
+   cause as the 401.
+3. **MCP pointed at a different organisation** — production
+   `dash0-development`, 13 datasets — so Agent0 over MCP worked but couldn't
+   see the workshop org at all. Segment 5's "ask from both places" would
+   silently compare two different environments. Check what each participant's
+   MCP endpoint is actually bound to.
+
+Because of these, **segments 3-7 have still never been executed**, and the
+open questions below are still open.
+
+The run also confirmed the good part: both planted failures reproduce
+exactly, returning `500` with `details` of `503` (Large) and `403`
+(Hawaiian). Full notes and screenshots in [dry-run/](dry-run/).
+
 ## Open questions — answer before you send the pre-work mail
 
 - [ ] **Can Agent0 write code and open PRs on a participant's fork?** Gates

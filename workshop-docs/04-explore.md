@@ -6,9 +6,22 @@ The host drives this segment from the front, but follow along in **your own**
 data — your traces, your span names. Where yours differ from the projector,
 say so. That's a real finding, not a mistake (more on that at the end).
 
-## The waterfall
+## Getting to your traces
 
-Open any successful order trace.
+Before the interesting part, three things that catch people out — check all
+three whenever a view looks empty:
+
+1. **Dataset.** The selector is at the top of the screen. If you're sharing
+   an organisation with the room, make sure you're on yours.
+2. **Time range.** Defaults are often wider or narrower than you want. Set
+   it to the last 15 minutes — you placed those orders a moment ago.
+3. **Filters carried over** from the last thing you clicked. An empty list
+   with an active filter looks exactly like an empty list with no data.
+
+Then find the trace list (**Tracing** in the main navigation) and open a
+trace from one of your successful orders.
+
+## The waterfall
 
 - **Width is time.** The longest bar is where the time went.
 - **Nesting is causation.** A child span happened *because of* its parent.
@@ -68,7 +81,10 @@ calls what.
 
 ## Now find a failure
 
-Filter the trace list for errors.
+Back to the trace list, and filter it to errors — either by clicking an
+error indicator in the list, or by filtering on the span status. If nothing
+comes back, re-check the three things at the top of this page, then place
+another failing order and wait a few seconds.
 
 **A failing trace already looks different** — before you've told Dash0
 anything about what a failure means in your app. Open one:

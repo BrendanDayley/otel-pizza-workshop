@@ -81,7 +81,9 @@ Review it on the same terms as segment 3:
 ## Merge and verify
 
 ```bash
-git pull
+git checkout main
+git pull origin main
+cd pizza-app
 docker compose up -d --build
 ```
 
@@ -92,15 +94,12 @@ one of the two bugs. Go back to step 1 with the failure that remains.
 
 ## The fallback
 
-Reference fixes exist as branches if your agent can't get there:
+**Ask the host.** Reference fixes exist, but the branch names give away both
+root causes, so they're not printed here — reading them would end the
+exercise you're in the middle of.
 
-```bash
-git fetch origin
-git log --oneline origin/fix-1-pineapple origin/fix-2-size-rank
-```
-
-Ask the host before reaching for these — a stuck agent is usually two nudges
-away, and watching those two nudges work is more useful than the diff.
+A stuck agent is usually two nudges away, and watching those two nudges work
+is worth more than the diff.
 
 ---
 

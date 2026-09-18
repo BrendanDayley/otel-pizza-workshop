@@ -43,8 +43,12 @@ Merge when you're happy.
 
 ## Pull and rebuild
 
+From the repository root, on your `main` branch:
+
 ```bash
-git pull
+git checkout main
+git pull origin main
+cd pizza-app
 docker compose up -d --build
 ```
 
@@ -77,14 +81,17 @@ In this order, it's almost always one of these:
 
 ## Stuck at minute 18?
 
-Take the fallback. A working reference implementation lives on the `solution`
-branch:
+Take the fallback. A working reference implementation exists — **ask the
+host for the branch name**, then:
 
 ```bash
 git fetch origin
-git checkout -b my-instrumentation origin/solution
-docker compose up -d --build
+git checkout -b my-instrumentation origin/<branch-the-host-gives-you>
+cd pizza-app && docker compose up -d --build
 ```
+
+You'll still need your own `.env` — the reference has the configuration, not
+your credentials.
 
 You'll rejoin the group with data flowing. Come back to your agent's output
 later — what it got wrong is genuinely interesting, just not right now.

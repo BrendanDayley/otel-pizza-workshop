@@ -14,21 +14,26 @@ First build takes a few minutes. When the log settles, open
 
 ## Order some pizzas
 
+The form needs a name as well as a pizza and a size — any name will do.
 Order these four, in this order, and write down what happens:
 
-| # | Pizza | Size | What you see |
-|---|---|---|---|
-| 1 | Margherita | Small | |
-| 2 | Margherita | Medium | |
-| 3 | Margherita | **Large** | |
-| 4 | **Hawaiian** | Small | |
+| # | Your Name | Pizza | Size | What you see |
+|---|---|---|---|---|
+| 1 | anything | Margherita | Small | |
+| 2 | anything | Margherita | Medium | |
+| 3 | anything | Margherita | **Large** | |
+| 4 | anything | **Hawaiian** | Small | |
 
 Two of them fail.
 
 ## Look at what you were told
 
-Open the browser's devtools, Network tab, and click the failed request. The
-response body is:
+Open devtools → Network, and click the failed request. It's the `POST` to
+`localhost:3000/order` — the frontend is served from `:8080` but calls the
+order service directly, so the request you want is cross-origin and won't be
+under the page's own host.
+
+The response body is:
 
 ```json
 {
@@ -37,8 +42,11 @@ response body is:
 }
 ```
 
-Now look at the other failure. Same shape. Possibly a different status code
-buried in `details`, but the same flat `500`, the same useless `error`.
+Now look at the other failure. Same flat `500`, same useless `error` — but a
+different code buried in `details`. **Write both codes down.** That
+difference is the only evidence you currently have that these might be two
+separate problems, and the browser never shows it: the page displays
+`error`, not `details`.
 
 Now the logs. In the terminal running compose:
 
@@ -46,7 +54,9 @@ Now the logs. In the terminal running compose:
 order-service     | Error processing order PIZZA-1731...: Request failed with status code 503
 ```
 
-That's it. That's everything the system is prepared to tell you.
+That's everything order-service — the one the browser talks to — is prepared
+to tell you. It caught an error from somewhere downstream and forwarded the
+status code without the reason.
 
 ## The questions you can't answer
 
@@ -61,34 +71,59 @@ about getting to answer them:
 4. **How often is this happening?** You found it by ordering four pizzas. How
    would you have found it from production?
 
-The information you want *does* exist — somewhere in those container logs,
-something got printed. But it's interleaved with three other services and
-nothing ties it to your order. With twenty orders a second, it's gone.
+## Now go digging in the logs
 
-> **This is the whole argument for tracing.** Not "logs are bad" — but that a
-> failure crossing a service boundary loses its cause at that boundary, and no
-> amount of reading logs puts it back.
-
-## Try the log approach anyway
-
-Genuinely worth ten seconds so nobody wonders later:
+You have three services and two failures. Go and look:
 
 ```bash
 docker compose logs delivery-service | tail -20
 docker compose logs kitchen-service | tail -20
 ```
 
-You may well spot something suspicious. Now ask yourself: **could you have
-found that without already knowing which service to look in?** And could you
-tell whether it relates to *your* order, or the one someone else placed at the
-same moment?
+**One of your two failures explains itself here.** A service logged, in
+plain English, why it refused. Find it.
+
+**The other one doesn't.** Go and look for it. The service logs that it
+started handling the order, and then — nothing. No error, no refusal, no
+line at all. The failure is real, the response code proves it, and the log
+is silent.
+
+That asymmetry is the actual lesson, and it's worth more than either failure
+on its own:
+
+- Logging is **something a developer remembered to write.** The first
+  failure was logged because somebody thought to log it. The second wasn't
+  because nobody did.
+- You only found the first one because you already knew which service to
+  look in — and you only knew that because there are three. On a system with
+  forty services, "grep everything" is not a strategy.
+- Even having found it, **nothing ties that line to your order.** At twenty
+  orders a second, interleaved with three other services, which of those
+  refusals was yours?
+
+> **This is the argument for tracing.** Not "logs are bad" — logs are great,
+> right up to the moment the failure crosses a service boundary. There, the
+> cause is dropped, and no amount of reading logs puts it back. A trace
+> keeps both halves attached to the same request.
+
+Hold onto the second failure — the silent one. When you get to segment 5,
+notice whether the agent can explain it, and what it used to do so.
 
 ## Keep it running
 
-Leave compose up. You'll be rebuilding into it for the rest of the session.
+Leave compose up — you'll be rebuilding into it for the rest of the session.
+It runs in the foreground and keeps printing, so **open a second terminal**
+for every other command in this workshop. If you'd rather have your prompt
+back, `Ctrl+C` and restart it detached:
+
+```bash
+docker compose up -d
+docker compose logs -f        # when you want to watch
+```
 
 ---
 
-**Done when** you've reproduced both failures and can't name either cause.
+**Done when** you've reproduced both failures, and can explain one of them
+but not the other.
 
 **Next:** [2. Connect Dash0 →](02-connect-dash0.md)

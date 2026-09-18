@@ -38,13 +38,18 @@ Find the fix commit you merged in segment 5:
 git log --oneline -10
 ```
 
-Revert it, push, and rebuild:
+Revert it on a branch, push the branch, and rebuild locally:
 
 ```bash
+git checkout -b break-it-again
 git revert --no-edit <the-fix-commit-sha>
-git push
-docker compose up -d --build
+git push -u origin break-it-again
+cd pizza-app && docker compose up -d --build
 ```
+
+A branch rather than a commit straight onto `main`, for two reasons: the
+agent's draft PR wants somewhere to merge *back to*, and you'll want a clean
+way to undo this in a minute.
 
 Now generate enough failing traffic to cross your threshold. Order the pizza
 that used to fail, repeatedly — or from a second terminal:
@@ -81,10 +86,11 @@ at 3am.
 
 ## Put it back
 
+Throw the branch away — you never merged it:
+
 ```bash
-git revert --no-edit <the-revert-commit-sha>
-git push
-docker compose up -d --build
+git checkout main
+cd pizza-app && docker compose up -d --build
 ```
 
 Or merge the draft PR the agent just opened, if it's correct — which is a

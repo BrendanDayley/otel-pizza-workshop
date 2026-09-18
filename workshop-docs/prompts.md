@@ -14,6 +14,9 @@ Diagnosis (Prompt 2) works from either.
 
 *Segment 3. In the Dash0 app.*
 
+Name the repository explicitly if your fork isn't called
+`otel-pizza-workshop` — the agent can't guess which one you mean.
+
 ```
 This repository is a pizza-ordering app with three Node.js/Express services
 (order-service, kitchen-service, delivery-service) and an nginx frontend, run
@@ -28,9 +31,12 @@ Dash0:
   delivery-service.
 - Add an OpenTelemetry Collector to docker-compose.yml, and have the services
   export to it.
-- Have the collector export to Dash0 using the endpoint and auth token from
-  the existing .env file. Reference the environment variables — do not put
-  the token value in any committed file.
+- Have the collector export to Dash0 over OTLP gRPC at this endpoint:
+  [paste your DASH0_OTLP_GRPC_ENDPOINT value, e.g.
+  ingress.eu-west-1.aws.dash0.com:4317]
+- The auth token is in pizza-app/.env as DASH0_AUTH_TOKEN. That file is
+  gitignored, so you can't read it and you don't need to — reference the
+  environment variable. Never put the token value in any committed file.
 - Make sure trace context propagates across the HTTP calls between services,
   so one order produces one connected trace.
 
@@ -107,8 +113,10 @@ fixes the root cause.
 Create a check rule that would have caught the failure we just fixed.
 
 - Alert on the error rate of order-service, not on individual errors.
-- Only about [a third] of requests were failing when the bug was live, so the
-  threshold has to be well below that — but high enough not to fire on
+- Base the threshold on the error rate actually in the data for the period
+  before the fix was merged — tell me what that rate was rather than
+  assuming one. It depended entirely on what people happened to order.
+- The threshold has to be below that rate, but high enough not to fire on
   ordinary noise.
 - Tell me what threshold and what evaluation window you chose, and why.
 - Before creating it, tell me whether this rule would have fired during the

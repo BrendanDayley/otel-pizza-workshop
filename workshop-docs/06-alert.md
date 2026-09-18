@@ -17,14 +17,17 @@ fixed, and won't fire on noise.
 Don't accept the first number the agent proposes. Ask yourself — and each
 other — what it should actually be.
 
-Remember what the failure looked like: **most orders succeeded.** Only some
-combinations broke. So:
+Remember what the failure looked like: **only some orders broke.** Which
+means your error rate depended entirely on what people happened to order —
+in a real system, on traffic mix you don't control. Check what your actual
+rate was before the fix rather than guessing. So:
 
 - **"Alert on any error"** — you'll be woken by every dropped connection and
   every bot probing your API. You'll mute it within a week, and then it will
   miss the real one.
-- **"Alert at 50% error rate"** — you'd never have caught today's bug. It
-  never got near 50%.
+- **"Alert at 50% error rate"** — safe from noise, and useless. A bug
+  affecting one product line rarely moves the overall rate that far, and
+  you'd have shipped it for days.
 - Somewhere between those is a number that depends on things telemetry can't
   tell you: how much traffic you get, how bad a failed pizza order is, and
   who's awake.

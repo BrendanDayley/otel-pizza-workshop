@@ -42,8 +42,11 @@ cost the room nothing at home and twenty minutes here.
 - [ ] **Forked** <https://github.com/dash0hq/otel-pizza-workshop> and cloned
       *your fork* — every segment from 3 onward opens a PR against a repo you
       need to own
-- [ ] **A Dash0 account**, and you know which region it's in
+- [ ] **A Dash0 account**, and you know which region it's in — and **which
+      URL to log in at**, which may not be `app.dash0.com`. Ask your host.
 - [ ] **Ran `docker compose up` once** so the images are built and cached
+- [ ] Optional: the **GitHub CLI** (`gh`), which makes the fork step one
+      command instead of a browser trip
 
 Pre-pull the base images if you're on conference wifi — a room full of people
 pulling `node:20-alpine` at once will hit Docker Hub's anonymous rate limit:

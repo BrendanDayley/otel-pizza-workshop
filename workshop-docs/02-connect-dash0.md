@@ -9,7 +9,11 @@ code, so that in the next segment it can write the instrumentation itself.
 
 ## Log in and find your dataset
 
-Open <https://app.dash0.com> and sign in.
+Open Dash0 and sign in. **Use the URL your host gave you** — if you're on a
+Dash0 dev or trial environment the host is not `app.dash0.com`, and every
+link in these docs will land you in the wrong place. Write yours down here:
+
+> My Dash0 URL: `__________________________`
 
 A **dataset** is where your telemetry lands. The `default` dataset is fine for
 today. If you're sharing an organisation with the rest of the room, the host
@@ -18,14 +22,23 @@ hours confusing for both of you.
 
 ## Get your ingest credentials
 
-You need two things, and you'll hand both to the agent in the next segment:
+You need two things, and you'll hand both to the agent in the next segment.
 
-| What | Where |
-|---|---|
-| **Endpoint** | Organization settings → Endpoints → OTLP |
-| **Auth token** | Organization settings → Auth Tokens → create one with ingest rights |
+**Organization settings → Endpoints** lists *two* OTLP entries, and they look
+different on purpose:
 
-Copy them somewhere you can paste from.
+| Entry | Shape | Example |
+|---|---|---|
+| **OTLP via gRPC** | `host:port`, no scheme | `ingress.<region>.aws.dash0.com:4317` |
+| **OTLP via HTTP** | scheme, no port | `https://ingress.<region>.aws.dash0.com` |
+
+**Take the gRPC one.** Both work, but they need different exporter
+configuration, and mixing them up is a silent failure — the collector starts
+fine and nothing arrives. Pinning one now means the agent in segment 3 has
+one obvious right answer.
+
+Then **Organization settings → Auth Tokens** → create a token with ingest
+rights.
 
 > **The region matters more than you'd think.** Dash0 endpoints are
 > region-specific, and sending to the wrong region doesn't error — it just
@@ -35,9 +48,40 @@ Copy them somewhere you can paste from.
 Put them in an `.env` file at `pizza-app/.env`:
 
 ```bash
-DASH0_OTLP_ENDPOINT=<your endpoint>
+DASH0_OTLP_GRPC_ENDPOINT=ingress.<region>.aws.dash0.com:4317
 DASH0_AUTH_TOKEN=<your token>
+DASH0_DATASET=default
 ```
+
+## Check the credentials actually work — don't skip this
+
+Two minutes here saves the whole of the next segment. The Endpoints page
+prints an example `curl`; run it, or this equivalent:
+
+```bash
+cd pizza-app
+set -a; source .env; set +a
+
+curl -i -X POST "https://ingress.<region>.aws.dash0.com/v1/traces" \
+  -H "Authorization: Bearer $DASH0_AUTH_TOKEN" \
+  -H "Dash0-Dataset: $DASH0_DATASET" \
+  -H "Content-Type: application/json" \
+  -d '{"resourceSpans":[]}'
+```
+
+Note the HTTP endpoint here — `curl` speaks HTTP, the collector will speak
+gRPC. Same credentials either way.
+
+| You get | Meaning |
+|---|---|
+| `200` | Good. Continue. |
+| `401` | Token is wrong, or belongs to a different organization. |
+| `404` / connection failure | Wrong region or wrong host. |
+| `421` | The organization is being addressed on the wrong cluster — **tell your host, this is not something you can fix.** |
+
+**Stop here if this doesn't return 200.** Everything from segment 3 onward
+depends on it, and every downstream symptom will look like an
+instrumentation problem instead of a credentials problem.
 
 `.env` is already gitignored. **Keep it that way** — when you review the
 agent's PR in the next segment, one of the things you're checking is that it
