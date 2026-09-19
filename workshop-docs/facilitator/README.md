@@ -206,7 +206,44 @@ troubleshooting has the crash-loop symptom. **It's also a genuinely good
 teaching moment** — the failure was loud and the docs' own guidance found
 it. Consider not over-protecting against it.
 
-Segments 4-7 remain unexecuted.
+### Segments 4 and 5 ran — and segment 5 validated the whole design
+
+**Agent0 found both bugs, unprompted. The documented nudge wasn't needed.**
+It opened `fix/order-failures-size-rank-and-hawaiian-block` (PR #2 on the
+fork) containing exactly the two reference fixes and nothing else: `large`
+→ `Large` in `SIZE_RANK`, and the Hawaiian 403 block deleted. Nine lines.
+
+What makes this a good demo rather than a lucky one:
+
+- **It measured the failure rate** — ~44% over a 30-minute sample. Use that
+  number in segment 6; it's real and it's awkward, which is the point.
+- **It cited 14 trace IDs**, seven per cause, and they hold up when opened.
+- **It explicitly refused the symptom fix**: "order-service's catch-all is
+  untouched since it isn't the cause." That's the exact trap segment 5's
+  review checklist warns about, declined without being asked.
+- **It corroborated with span durations** — delivery 503 at ~103ms vs ~253ms
+  for a successful assignment; kitchen 403 at ~1-7ms vs ~310ms for a cook.
+- **Best of all, it stated what it could not know.** Unprompted, under a
+  "Not checked" heading, it said it couldn't confirm pizza type and size
+  from telemetry because those are request-body values the spans don't
+  carry, and that its attribution rested on code paths plus the fact that
+  7+7 accounted for every failure with none left over.
+
+That last point is the workshop demonstrating its own thesis: segment 4
+plants "the pizza type and size aren't there", segment 5 predicts it will
+bite, and the agent hit exactly that wall and said so instead of asserting.
+**Show the room that paragraph.**
+
+It also declined to read `workshop-docs/`, announcing the exclusion
+out loud. The `AGENTS.md` rule works.
+
+One real gap it exposed, now fixed in segment 5 and troubleshooting: the
+docs tell participants to "open the trace ID", and there is **no URL you
+can construct** — `/traces/<id>` 404s. It's Tracing → funnel icon → paste,
+matching on `otel.trace.id`. Without that sentence the entire
+"verify, don't trust" discipline is unusable.
+
+Segments 6 and 7 remain unexecuted.
 
 The run also confirmed the good part: both planted failures reproduce
 exactly, returning `500` with `details` of `503` (Large) and `403`

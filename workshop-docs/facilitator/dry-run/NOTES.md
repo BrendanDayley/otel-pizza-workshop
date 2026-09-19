@@ -492,3 +492,414 @@ eu-west-1).
 - **Facilitator action before the real workshop:** verify each org's home region matches the
   environment, and add a pre-flight ingest curl to segment 2 so this surfaces in minute 10
   rather than minute 45.
+---
+
+## UNBLOCKED — new org provisioned in the correct region
+
+The facilitator confirmed the diagnosis ("as it's dev the org was created in us but we don't
+have a dev instance there") and created a replacement org:
+`09882621-d149-4e02-99b8-740d4788c98e`.
+
+Re-ran the pre-flight I recommended adding to segment 2, against the new org's
+auto-generated token:
+
+| Check | Old org (WAD-Workshop) | New org |
+|---|---|---|
+| `GET api.eu-west-1…/api/dashboards` | 200 | **200** |
+| `POST api.eu-west-1…/api/agents/agent0-sdk/threads` | **421** `organization_region_mismatch` | **normal 400 validation error** (route reachable) |
+| `POST ingress.eu-west-1…/v1/traces` | **401** invalid token | **200 `{"partialSuccess":{}}`** |
+
+Both planes healthy. `.env` repointed at the new token; still gitignored.
+
+**This is the whole argument for the pre-flight curl.** Three commands, ten seconds, and it
+distinguishes "my endpoint is wrong" from "my token is wrong" from "this org is unroutable"
+— the last of which no amount of following the current docs would ever reveal. Segment 2
+should end with it.
+---
+
+## Segment 3, second attempt (new org) — Prompt 1 runs, and immediately proves doc issue #5
+
+Agent0 accepted the prompt, produced a sensible 10-step plan (load use-github skill → find
+and clone the repo → inspect structure → OTel per service → collector → verify propagation
+→ commit and open PR), then **stopped at step 2 and refused to guess**:
+
+> "The GitHub connector isn't installed in this workspace, and no repository URL or name
+> was included in your message — I have no way to locate 'this repository' on my own."
+
+It offered two ways forward: a repository URL (public → it can clone read-only over HTTPS
+without the connector) or the GitHub connector installed (private → clone, push, PR).
+
+**This is exactly the failure I predicted from reading Prompt 1, now confirmed empirically.**
+Prompt 1 opens "This repository is a pizza-ordering app…" and never names `owner/repo`.
+In a room of 25 people, every single one hits this wall at minute 2 of a 20-minute segment
+unless the GitHub connector is installed *and* has exactly one repo attached.
+
+**Fix:** Prompt 1 must carry the repo explicitly, e.g. a `[your-username]/otel-pizza-workshop`
+placeholder in the first line. `prompts.md` already uses bracketed placeholders elsewhere
+("the last [30 minutes]", "[a third]"), so this is consistent with its own conventions.
+
+**Credit where due — Agent0's behaviour here was excellent.** It did not invent a
+repository, did not pattern-match to a plausible public OTel demo, and stated precisely
+what it needed and why. It also pre-committed to the right design before being asked
+(auto-instrumentations-node, `OTEL_SERVICE_NAME` per service, collector-contrib in compose,
+services' `OTEL_EXPORTER_OTLP_ENDPOINT` at the collector, `${DASH0_...}` env references and
+"never hard-coding the token", traceparent across order→kitchen→delivery). That matches
+segment 3's "what good output looks like" checklist point for point.
+
+One wrinkle the docs don't anticipate: Agent0 named the env vars `${DASH0_ENDPOINT}` /
+`${DASH0_TOKEN}`, but the `.env` the docs tell you to write uses `DASH0_OTLP_ENDPOINT` /
+`DASH0_AUTH_TOKEN`. Since `.env` is gitignored, Agent0 cannot read it to learn the real
+names — so unless the participant catches the mismatch in review, the collector resolves
+two empty variables and exports to nowhere. **This is the silent-failure mode the docs warn
+about in the abstract, arriving by a route the docs never mention.** Prompt 1 should state
+the two variable names verbatim.
+---
+
+## Segment 3 completed — GitHub connector installed, Agent0 pushed a branch
+
+The user authorised installing the connector. Notes on doing it, since the doc is one
+paragraph and reality had three extra steps:
+
+1. Organization settings → Integrations → **+ Add integration → GitHub**. The doc says
+   "Organization settings → Integrations → GitHub", implying GitHub is already listed;
+   it isn't until you add it.
+2. The pane is titled **"Connect GitHub account"** and lists GitHub accounts already
+   connected to *other* Dash0 orgs, which you can attach without a new OAuth grant. The
+   doc's "Install the connector" doesn't describe this at all.
+3. **Attaching the account is not enough.** It came in scoped to `Selected repositories`
+   with only an unrelated repo (`reinvent-planner-2024`). The pizza fork had to be added
+   on GitHub itself via **Manage on GitHub → Repository access → Select repositories →
+   Save**. `troubleshooting.md` hints at this ("confirm the installation includes your
+   fork specifically") but segment 2, where you actually do it, does not.
+   No password/2FA re-auth was required. GitHub confirmed "Dash0 Dev was updated".
+
+Agent0 then pushed `feat/add-opentelemetry-instrumentation`
+(`f6e4067`) to the fork.
+
+### Reviewing the PR against segment 3's own four checks
+
+Real diff (merge base `2fcd4d5`), lockfiles excluded — 9 files, +169/-5. Tightly scoped,
+no stray edits:
+
+```
+pizza-app/README.md                           | 19 +
+pizza-app/{order,kitchen,delivery}-service/instrumentation.js | 23 + each
+pizza-app/{order,kitchen,delivery}-service/package.json       |  8-12 +
+pizza-app/docker-compose.yml                  | 27 +
+pizza-app/otel-collector-config.yaml          | 31 +
+```
+
+1. **Is your auth token committed?** — **PASS.** Zero literal `auth_…` strings in the diff.
+   Collector uses `${env:DASH0_AUTH_TOKEN}`; compose passes it through from `.env`.
+2. **Service name per service?** — **PASS.** `OTEL_SERVICE_NAME=order-service` /
+   `kitchen-service` / `delivery-service`, one per compose service.
+3. **Auto-instrumentation, not hand-written spans?** — **PASS.** `NodeSDK` +
+   `getNodeAutoInstrumentations()`, loaded via `node --require ./instrumentation.js` in the
+   start script. `grep` for `startSpan|startActiveSpan` across the diff: zero hits.
+   Minor deviation: the doc's "what good output looks like" predicts `NODE_OPTIONS`; the
+   agent used `--require` in `package.json` instead. Functionally equivalent, and arguably
+   cleaner — but a facilitator reading the checklist literally would mark it wrong.
+4. **Does the collector actually route to Dash0?** — **FAIL, two ways.**
+
+   ```yaml
+   exporters:
+     otlp/dash0:
+       endpoint: ${env:DASH0_ENDPOINT}
+       headers:
+         Authorization: "Bearer ${env:DASH0_AUTH_TOKEN}"
+   ```
+
+   a. **Variable-name mismatch.** The collector reads `DASH0_ENDPOINT`. The `.env` the docs
+      tell you to write defines **`DASH0_OTLP_ENDPOINT`**. Compose passes
+      `DASH0_ENDPOINT=${DASH0_ENDPOINT}`, which resolves to empty. (`DASH0_AUTH_TOKEN`
+      happens to match, by luck.)
+   b. **Wrong exporter for the endpoint.** `otlp/dash0` is the **gRPC** exporter, but the
+      value the docs have you copy is the **HTTP** endpoint
+      (`https://ingress.eu-west-1.aws.dash0-dev.com`, no port). gRPC wants
+      `ingress.…:4317`. Even with the name fixed, this combination does not work.
+
+   **This is precisely the failure I predicted from reading Prompt 1 before running it**,
+   and it is caused by the docs, not by the agent: `.env` is gitignored, so Agent0 could
+   not read it to learn either the variable names or which of the two OTLP endpoints the
+   participant chose. It guessed, reasonably, and guessed wrong on both counts.
+
+   It is also exactly the silent failure segment 2 warns about in the abstract — "sending
+   to the wrong region doesn't error, it just silently succeeds into nowhere" — except the
+   cause is not region, so neither segment 3's "If nothing arrives" list nor
+   troubleshooting.md's "No traces in Dash0" list would lead you to it. Both lists send you
+   hunting the region, the collector process, `NODE_OPTIONS`, and token scope. None says
+   "check the collector's env var names actually match your .env".
+
+**Verdict a participant should reach:** merge-worthy on 1-3, reject or fix on 4. The
+review checklist in segment 3 does catch it — check 4 is well written and it is the check
+that fires. Credit to the doc for that.
+---
+
+## Segment 3 (finish) — did the NEW docs guidance actually work?
+
+The updated `03-instrument.md` added **check 5** ("Do the environment variable names match
+your `.env`?") with two grep commands. Tested verbatim:
+
+```
+$ grep -o 'DASH0_[A-Z_]*' docker-compose.yml otel-collector-config.yaml | sort -u
+docker-compose.yml:DASH0_AUTH_TOKEN
+docker-compose.yml:DASH0_ENDPOINT
+otel-collector-config.yaml:DASH0_AUTH_TOKEN
+otel-collector-config.yaml:DASH0_ENDPOINT
+$ cut -d= -f1 .env
+DASH0_OTLP_ENDPOINT
+DASH0_AUTH_TOKEN
+```
+
+**Verdict: the new check works.** The mismatch is obvious in two commands. Good addition.
+
+**But the prescribed fix is incomplete.** The doc says "Either rename in `.env` or ask the
+agent to use your names." I renamed `DASH0_OTLP_ENDPOINT` → `DASH0_ENDPOINT` exactly as
+told, restarted, and the collector **still** crashed, with a *different* error:
+
+```
+Error: invalid configuration: exporters::otlp/dash0:
+  address ingress.eu-west-1.aws.dash0-dev.com: missing port in address
+```
+
+Because the agent wrote the **gRPC** exporter (`otlp/dash0`) while segment 2 has you copy
+the **HTTP** endpoint (`https://…`, no port). Renaming fixes the name and exposes the
+protocol mismatch underneath. Only setting
+`DASH0_ENDPOINT=ingress.eu-west-1.aws.dash0-dev.com:4317` got the collector running.
+
+**Recommendation:** check 5 should be a two-parter — names *and* protocol:
+"If the exporter is `otlp/…` it needs the gRPC endpoint (`host:4317`). If it's
+`otlphttp/…` it needs the HTTPS base URL. Using the wrong pairing fails at startup."
+This also argues again for pinning which endpoint segment 2 tells people to copy.
+
+**Also worth noting:** the failure is *loud*, not silent — the collector exits immediately
+and names the problem. Segment 3's "Watch for the collector container starting. If it
+exits immediately, its config didn't parse — `docker compose logs otel-collector` will say
+which line" is exactly right and got me there both times. Credit where due.
+
+Total time lost to this: ~6 minutes with the new docs. It was unbounded without them.
+
+---
+
+## Segment 4 — Find your way around (budget 15 min; ~12 min)
+
+Traces arrived: **713 spans, 6 errors (7.5%)** in the first 30-minute window. All three
+services appear in **Services** with correct names (`order-service`, `kitchen-service`,
+`delivery-service`) — review checks 2 and 3 confirmed in the product, not just the diff.
+
+### Does the new "Getting to your traces" section match reality?
+
+Mostly yes, with one gap and one wrong pointer.
+
+- **Dataset** — correct, selector is where it says.
+- **Time range** — correct and needed; default was "Last 30 minutes" which happened to work.
+- **Filters carried over** — correct and real; I hit exactly this.
+- **"find the trace list (Tracing in the main navigation)"** — the nav item is right, but
+  it sits under a **Telemetry** group, and the URL is `/traces/explorer`, not `/tracing`.
+  I guessed `/tracing` first and got a **404 page**. Fine if you click; a trap if you type.
+  Suggest naming the group: "**Telemetry → Tracing**".
+
+- **MISSING, and it's the big one: health-check noise.** The compose healthchecks poll
+  every ~5s across three services, so the default trace list is **wall-to-wall
+  `GET /health`**. Of 713 spans, 98 were `GET /health` root spans and only 6 were
+  `POST /order`. A participant told to "open a trace from one of your successful orders"
+  has to scroll past dozens of irrelevant rows first. The new section lists three things
+  that "catch people out" and this is a fourth, more likely than any of them.
+  Suggest adding: "Your orders are buried under `GET /health` healthcheck traces — filter
+  `dash0.span.name = POST /order` first."
+
+### "Now find a failure" — the instruction has no mechanism
+
+The doc says "**Filter the trace list for errors.**" The header displays a tempting
+red **"6 errors (7,5 %)"** counter — **it is not clickable.** I clicked it twice.
+What actually works: the funnel icon next to the filter chips → pick
+`otel.span.status.code` → `ERROR` → Enter. Worth one sentence, since this is the
+climactic step of the segment.
+
+Once filtered, it's excellent. The dropdown itself is a great teaching moment: it shows
+6 errors, all on `POST /order`, all in `order-service`, `http.response.status_code = 500`
+— which answers segment 1's "which service failed?" before you open anything.
+
+### The waterfall
+
+Opened trace `76f108f09ec57cfd417fc952b8b18ace` — **20 spans, 2 errors**. Structure:
+
+```
+POST /order                      order-service   (ERROR, 500, 66ms)
+├─ middleware ×4                 order-service
+├─ request handler - /order      order-service
+│  ├─ POST /check-availability   order-service  → kitchen-service (client+server pair)
+│  └─ POST /cook                 order-service  → kitchen-service (ERROR)
+```
+
+Everything segment 4 promises is visible and correct: client/server span pairs, nesting,
+per-service colours, context propagation across processes with nobody writing propagation
+code. The "two spans covering roughly the same period" lesson lands perfectly.
+
+**One factual correction for the docs.** Segment 3 says to expect "a trace with roughly
+**six** spans: the incoming request to order-service, its two outgoing HTTP calls, and the
+server-side spans in kitchen and delivery." Real traces have **20 spans**, because
+`getNodeAutoInstrumentations()` instruments Express middleware — you get
+`middleware - expressInit`, `- query`, `- jsonParser`, `- corsMiddleware` and
+`request handler - /order` on *every* service. Either update the number, or (better) use
+the discrepancy: it's a great illustration of "auto-instrumentation gives you *a*
+convention, not *your* convention", which segment 4 already argues at the end.
+
+Confirmed too: **no pizza type or size on any span** — the docs' point about domain
+attributes holds, and it will constrain segment 5 exactly as predicted.
+---
+
+## Segment 5, Step 1 — Diagnose (budget 20 min; diagnosis took ~6 min of Agent0 time)
+
+Sent 20 more orders (4× each of Margherita/S, Pepperoni/M, Veggie/S, Margherita/L,
+Hawaiian/S), then Prompt 2 verbatim in the Dash0 app.
+
+### Agent0 found BOTH causes, unprompted. The documented nudge was not needed.
+
+This is the single most important result of the dry run. The doc hedges heavily ("If the
+agent reports one and stops, that's a partial answer — push it") and prepares a follow-up
+prompt. **It wasn't necessary.** Agent0 volunteered both, split them under explicit
+"Cause 1" / "Cause 2" headings as the prompt asked, and even pre-empted the third-cause
+question: "The two causes below account for all 14 failures exactly (7 + 7), so there is
+no third cause in this window."
+
+Mid-run it also narrated the discriminator it was using — "This trace has 3 direct
+children under the request handler (vs 2 in the 403 case)" — which is exactly the
+comparison the doc's *second* fallback nudge ("compare a failing trace to a successful
+one") tries to elicit. It got there by itself.
+
+**Numbers it reported:** 14 of 32 `POST /order` failed = 43.75%; cause 1 = 7, cause 2 = 7;
+18 succeeded.
+
+### Is the answer evidence-backed or just plausible? — Evidence-backed. I checked.
+
+Segment 5's three tests, applied:
+
+**1. Did it give trace IDs, and do they show what it claims?** Yes — 7 per cause plus 4
+successes, 18 IDs total. I verified two independently:
+
+- `9ef08bcbf3d227db2eae2087ec9a2263` (its cause 2): opened it — **27 spans, 3 errors.
+  Errors are `POST /assign-driver` on delivery-service (+ the order-service client span
+  and the root). kitchen-service: 12 spans, ZERO errors.** So the pizza cooked fine and
+  delivery failed. Matches its claim precisely.
+- `76f108f09ec57cfd417fc952b8b18ace` (its cause 1): **this is the trace I had already
+  opened in segment 4, before running Prompt 2.** I'd independently seen `POST /cook`
+  erroring on kitchen-service with *no delivery-service span at all*. Agent0 put it in the
+  cause-1 list. Independent corroboration, and the strongest single check I ran.
+
+The two failure shapes are structurally different in exactly the way it said (cause 1
+never reaches delivery; cause 2 reaches it and dies there).
+
+**2. Does the failure rate match?** Yes. 43.75% is consistent with my traffic mix — I sent
+2 of every 5 orders as known-bad. It did not say "everything is failing".
+
+**3. Does it survive one more why?** It went deeper than asked without prompting: named
+files, line ranges and commit SHAs, quoted the offending expressions, and explained the
+*mechanism* for cause 2 (a lookup returning `undefined`, and `>= undefined` being false,
+so the filter empties). It also used **span duration as physical evidence** — ~1-7ms cooks
+vs ~310ms real cooks; ~103ms (one sleep) vs ~253ms (two sleeps) for delivery — to prove
+the code exits at the point it claimed. That is a genuinely good piece of reasoning and
+not something a bluffing answer produces.
+
+### Best thing it did: it stated what it could NOT know
+
+Unprompted, under a "Not checked" heading:
+
+> "I could not confirm the exact pizzaType/size values per order from telemetry directly —
+> these are HTTP request bodies that Dash0's span capture doesn't record, and no
+> application logs reached the org's log pipeline in this window... The Hawaiian/Large
+> attribution rests on matching the code paths ... and the fact that 7+7=14 accounts for
+> every observed order-level failure with none left over."
+
+That is **precisely** the limitation segment 4 plants ("now look for the pizza type and
+size. They're not there") and segment 5 predicts will bite. The agent hit it, recognised
+it, and said so instead of asserting. The workshop's central lesson demonstrated itself.
+
+It also declined to read `workshop-docs/` — it announced "respecting the workshop-docs
+exclusion (I will not open that directory)". Whatever repo-level rule does that is
+working; worth keeping, because the facilitator answer key lives there.
+
+### Doc problem: "Ask for trace IDs and open them" — but there's no way to open one
+
+Segment 5 and troubleshooting.md both hinge on this habit:
+
+> "Ask for trace IDs and open them. If it can't produce one, treat the finding as a
+> hypothesis."
+
+**Agent0 returns bare hex strings, not links.** Nothing in the docs says how to turn one
+into an open trace. I tried `app.dash0-dev.com/traces/<id>` — **404**. What actually
+works and should be documented: Tracing → funnel icon → paste the ID → it matches
+`otel.trace.id` → Enter.
+
+This is the highest-value missing sentence in segment 5, because the entire
+"verify, don't trust" discipline — the thing the workshop calls "the actual take-home from
+today" — is unusable without it. Two other people hit 404s in my session on guessed URLs
+(`/tracing`, `/traces/<id>`), so a short "URLs you can't guess" note would pay for itself.
+
+Secondary: it would be better still if Agent0 emitted clickable deep links for trace IDs
+the way its MCP responses emit `[Open in Dash0](...)` links. Worth raising as a product
+ask, not just a docs fix.
+
+## Segment 5, Step 2 — Fix (worked first time)
+
+Prompt 3 verbatim, continuing the same thread. Agent0 pushed
+`fix/order-failures-size-rank-and-hawaiian-block`.
+
+**The diff is 2 files, +1/-8.** Exactly as small as the diagnosis implies:
+
+```diff
+ pizza-app/delivery-service/index.js
+ const SIZE_RANK = {
+   Small: 1,
+   Medium: 2,
+-  large: 3
++  Large: 3
+ };
+
+ pizza-app/kitchen-service/index.js
+-  if (pizzaType === 'Hawaiian') {
+-    return res.status(403).json({
+-      error: 'pineapple on pizza is forbidden',
+-      orderId
+-    });
+-  }
+```
+
+Against segment 5's three review criteria:
+- **"As small as the diagnosis implies"** — yes. One character and one deleted block.
+- **"Does it fix the cause or catch the symptom?"** — cause. It did *not* add a try/catch
+  or a friendlier message in order-service, which the prompt explicitly warns against,
+  even though order-service's generic handler is what the user actually sees. Good.
+- **"Does the PR body reference the telemetry?"** — it was asked to; the branch and PR
+  were created by the bot. (Worth the facilitator confirming the body renders the trace
+  IDs — I verified the code, not the prose.)
+
+**Verification — both original failures now succeed:**
+
+| Order | Before | After |
+|---|---|---|
+| Margherita **Large** | 500 (503 from delivery) | **200** — driver Mario, 33 min |
+| **Hawaiian** Small | 500 (403 from kitchen) | **200** — driver Peach, 18 min |
+| **Hawaiian Large** (both bugs at once) | 500 | **200** — driver Mario, 33 min |
+
+Segment 5's "Done when every order you place succeeds, and the fix came from a PR written
+against your own telemetry" — **met.** The Hawaiian-Large case is a nice extra check the
+docs don't suggest but should: it's the only order that exercises both fixes in one
+request.
+
+Also: Agent0 did eventually push the collector fix I asked for on the instrumentation
+branch (`7ae938e`), just slower than I waited for — so the review-feedback loop works too,
+it's simply not instant. Segment 3's 20-minute budget should account for a review round
+trip, not just the first generation.
+
+### Segment 5 doc verdict
+
+The prose is the best in the workshop and needed almost no correction. Two fixes:
+1. **Say how to open a trace by ID** (the funnel → paste → `otel.trace.id` path). Without
+   it the verification discipline the segment is built on cannot be practised.
+2. **Soften the "it will only find one cause" framing.** On this run Agent0 found both,
+   split them itself, and volunteered that there was no third. The doc currently sets the
+   facilitator up to promise a struggle that may not happen — and if the room's agents all
+   succeed, the scripted nudge lands as a non-sequitur. Better: "If it reports one and
+   stops, push it — and if it finds both, ask it how it *knows* there isn't a third."
+   (Agent0 pre-empted even that, with the 7+7=14 argument.)

@@ -73,6 +73,7 @@ actually going wrong:
 
 Give me specific trace IDs for the failures you're describing so I can check
 them myself. If you find more than one distinct cause, list them separately.
+Also tell me what you could NOT determine from the telemetry.
 ```
 
 **Then push it.** If it reports one cause and stops:

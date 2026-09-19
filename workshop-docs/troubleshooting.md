@@ -142,11 +142,17 @@ Two likely causes:
    Integrations → GitHub, and confirm the installation includes your fork
    specifically.
 
+## I have a trace ID but I can't open it
+
+There's no URL you can build from a trace ID — `/traces/<id>` and `/tracing`
+both 404. Go to **Tracing**, click the filter (funnel) icon, and paste the
+ID; it matches on `otel.trace.id`.
+
 ## Agent0's answer sounds right but I can't verify it
 
 That's the correct instinct, and the whole point of segment 5. Ask for trace
-IDs and open them. If it can't produce one, treat the finding as a hypothesis
-no matter how well written it is.
+IDs and open them (see above). If it can't produce one, treat the finding as
+a hypothesis no matter how well written it is.
 
 ## I'm behind and the room has moved on
 
