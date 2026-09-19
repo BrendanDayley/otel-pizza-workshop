@@ -21,8 +21,8 @@ whether its answer is actually true.**
 | 3 | [Let Agent0 instrument it](03-instrument.md) | 20 min | A merged PR adding OpenTelemetry |
 | 4 | [Find your way around](04-explore.md) | 15 min | Traces you can read |
 | 5 | [Let Agent0 troubleshoot](05-troubleshoot.md) | 20 min | A merged fix, and working orders |
-| 6 | [Alert on it](06-alert.md) | 15 min | A check rule you can defend |
-| 7 | [Close the loop](07-close-the-loop.md) | 20 min | An alert that arrives with a draft PR |
+| 6 | [Alert on it](06-alert.md) | 25 min | A check rule you can defend |
+| 7 | [Close the loop](07-close-the-loop.md) | 25 min | An alert that arrives with a draft PR |
 | | Wrap | 10 min | |
 
 Work through them in order — each one needs the one before it.

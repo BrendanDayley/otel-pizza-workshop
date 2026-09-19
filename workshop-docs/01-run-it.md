@@ -109,6 +109,20 @@ on its own:
 Hold onto the second failure — the silent one. When you get to segment 5,
 notice whether the agent can explain it, and what it used to do so.
 
+## Ordering from the terminal
+
+You'll want this later, and it's easier to get right now than at speed in
+segment 7. The frontend posts to the order service directly:
+
+```bash
+curl -s -X POST http://localhost:3000/order \
+  -H 'Content-Type: application/json' \
+  -d '{"customerName":"Test","pizzaType":"Hawaiian","size":"Small"}'
+```
+
+That's `/order` on port 3000 — not a path under the frontend's `:8080`, and
+not `/api/orders`.
+
 ## Keep it running
 
 Leave compose up — you'll be rebuilding into it for the rest of the session.

@@ -903,3 +903,188 @@ The prose is the best in the workshop and needed almost no correction. Two fixes
    succeed, the scripted nudge lands as a non-sequitur. Better: "If it reports one and
    stops, push it — and if it finds both, ask it how it *knows* there isn't a third."
    (Agent0 pre-empted even that, with the 7+7=14 argument.)
+
+## Segment 6 — Alert on it
+
+Prompt 4 verbatim, same thread. **It works, and the segment's central exercise
+(arguing about the threshold) genuinely works too.** But three things need fixing.
+
+### What Agent0 did
+
+**Does it look up the real pre-fix rate, or invent one?** It looks it up, with
+numbers: *"Across all order-service POST /order traffic recorded so far (35 requests
+total, all of it generated while the bug was live), 14 failed — a 40% error rate.
+Per-5-minute windows during the burst ranged from 37% to 50%, so 40% is a
+representative, not cherry-picked, figure."* No invention.
+
+**Does it answer "would this have fired?" with data?** Yes, and it ran the query to
+find out: *"the error ratio breaching 20% continuously from 05:16 to 05:24 UTC
+(0.50 → 0.40) ... A 2-minute grace period is comfortably satisfied by the ~9
+continuous minutes above threshold."*
+
+**Does it create the rule itself?** **No — and this matters for the docs.** It
+renders a check-rule *preview* card in the chat with a `Create check rule` button.
+The human clicks it. That happened for v1 and again for v2. So segment 6 has an
+undocumented final step: after the agent answers, *you still have to press the
+button.* A participant who reads "Create a check rule" and then sees a long prose
+answer will believe the rule exists when it does not. **Add to 06-alert.md: "Agent0
+proposes the rule; you click `Create check rule` in the chat to actually create it."**
+
+### The argument (the point of the segment) — it lands
+
+I pushed back on three things: that ~10 requests per 5m window makes 20% equal to two
+failures; that 40% was measured on 100%-bug-affected traffic so it is the incident,
+not a baseline; and that `http_route="/order"` makes the rule blind to every other
+route. It conceded all three and produced a v2:
+
+| | v1 | v2 |
+|---|---|---|
+| Threshold | 20% | 20% |
+| Window | 5m | **15m** |
+| Volume gate | none | **≥20 requests in window** |
+| Route filter | `http_route="/order"` | **`http_route!="/health"`** |
+
+And it found a real baseline I had not thought of: *"The one real (not bug-derived)
+baseline I do have is `GET /health` on the same service: 292 requests over the last
+6 hours, 0 errors."* It then correctly refused to over-claim from it — /health and
+/order don't share a failure mode — and said plainly: *"Honestly: 20% is a judgment
+call with headroom under the ~37-77% observed during the incident, not a threshold
+anchored to a measured quiet period."* That is exactly the honesty the segment asks
+for, and it got there only because I argued. **A participant who accepts the first
+answer gets a materially worse rule.** The doc should say that outright.
+
+I then clicked `Create check rule`. It exists and is enabled:
+`order-service order error rate too high` (v1 in Dash0's versioning, our v2).
+
+### Three problems
+
+1. **The UI said "Thinking…" for ~20 minutes on a turn that took 2m 34s.** After I
+   sent the follow-up argument, the chat sat on "Thinking…" with the reasoning
+   panel showing no new steps at all. I polled for twenty minutes, screenshotted it
+   as a hang (20-agent0-hung-on-followup.png), and only when I clicked in the UI did
+   the finished answer appear — stamped **"Thought for 2 m 34 s."** The answer had
+   been ready for seventeen minutes. This is a streaming/render stall, not a slow
+   agent, and in a room of thirty people on a 15-minute budget it will read as "my
+   agent is broken" and produce a wave of hands. **The facilitator guide needs:
+   "if it sits on Thinking… longer than ~3 minutes, click anywhere in the thread or
+   reload — the answer is probably already done."**
+
+2. **06-alert.md's threshold prose does not survive a 44% error rate.** The doc
+   argues: *"'Alert at 50% error rate' — safe from noise, and useless. A bug
+   affecting one product line rarely moves the overall rate that far, and you'd have
+   shipped it for days."* But in this workshop the planted bugs move the overall rate
+   to **40-50%**, so a 50% threshold is a coin flip rather than absurd, and the
+   rhetorical force of the bullet collapses. Worse, the doc's framing assumes the
+   participant will be tempted *upward* toward a useless number; the actual trap here
+   is the opposite — 20% sounds conservative but is two failures. Rewrite the three
+   bullets around the real number, and add the one the data actually teaches:
+   **"a percentage on ten requests isn't a rate. Ask what minimum volume the rule
+   needs before the ratio means anything."** That single question is what produced
+   every improvement in v2.
+
+3. **The segment has no budget for the argument.** 15 minutes covers: paste prompt,
+   wait ~2 min, read a dense answer, formulate a real objection, wait again, read
+   again, click create. I used about 35 minutes of wall clock, most of it waiting.
+   Either the budget goes to 25 or the doc tells the host to run the argument from
+   the front on one participant's answer.
+
+Cosmetic: one sentence in the v2 answer contains stray Chinese characters —
+*"evaluating on too few requests regardless of the ratio's 真实性"*. Harmless, but
+someone will screenshot it.
+
+## Segment 7 — Close the loop
+
+**It works. The loop closed, end to end, unattended.** This is the first time
+it has run, and it is the strongest moment in the workshop.
+
+### Timeline (measured)
+
+| Time (UTC) | Event |
+|---|---|
+| 16:58:34 | rebuilt on `break-it-again` (revert of the segment-5 fix), traffic starts |
+| ~17:02:32 | check rule's 15m evaluation window closes at 80.36% error rate |
+| 17:02:48 | **automation run starts**, `Triggered by: order-service order error rate too high` |
+| 17:06:42 | **draft PR #3 opens on the fork** |
+| | run status `SUCCESS`, duration **4 m 21 s**, 3.6 credits |
+
+**Threshold breach → draft PR: about 4 minutes.** Segment 5, with me in the loop,
+took roughly 25 minutes for the equivalent. That comparison is the payoff 07 asks
+participants to make, and it is a real one.
+
+### Grading the PR (07's three questions)
+
+**Did it find the real cause, or restate the alert?** Real cause, with the receipts:
+*"Measured ratio: 45 / 56 = 0.8036 (80.36%) — matches the failed check's reported
+value exactly"*, the evaluation window to the millisecond, **five failing trace IDs**,
+**one successful comparison trace** (`fb7b9e...`, non-Hawaiian, 200) to isolate the
+discriminating variable, and the code path down to
+`pizza-app/kitchen-service/index.js` lines 48-53 at a named commit. It re-ran the
+check rule's *own* PromQL against the window that actually fired rather than
+assuming today's numbers.
+
+**Is it the same fix I merged in segment 5?** **Half of it — and correctly so.**
+It removed the Hawaiian 403 and did not touch `SIZE_RANK`. My failing traffic was
+100% Hawaiian Large, and kitchen-service fails *before* delivery-service is ever
+called, so the size bug produced no telemetry. The agent fixed exactly what the
+evidence showed and nothing more. **This is the best teaching moment in the whole
+workshop and the doc does not mention it**: the automation is only as good as the
+traffic that tripped it, and an agent that fixes only what it can see is behaving
+correctly, not failing. Add to 07: *"Generate a mix — if every failing order is the
+same kind, the agent will only ever find one bug, and it will be right to."*
+
+**Is it actually a draft?** Yes — `isDraft: true`, verified via the API, not just
+the UI.
+
+### Product facts worth writing down
+
+- **Automations exist and can be created by Agent0.** But, exactly as in segment 6,
+  Agent0 *proposes* and the human clicks — here a `Set up automation` button that
+  opens a prefilled Create Automation form. **The doc must say this.** The form
+  arrives with `Disabled` pre-set, which is a good default and matches the prompt's
+  "walk me through before you enable it" — but it means a participant who reads the
+  agent's walkthrough and closes the tab has built nothing.
+- **Agent0 got one fact wrong about its own product.** It reported: *"`failed_check.new`
+  ... fires for any failed check in the org, not just this one (the schema has no
+  per-rule filter field; I confirmed this by probing the validator)"*, and worked
+  around it by putting a hard-stop rule-ID guard in the prompt. **The UI form has a
+  `Check rules` picker**, and I set it to the single rule in two clicks. So the
+  agent's API probe disagrees with the UI. The prompt guard is harmless belt-and-braces,
+  but a participant who believes the agent will think Dash0 can't scope an automation.
+  Worth a facilitator note and probably a bug.
+- The generated automation's parameters were correct without editing:
+  `repo=RaphaelManke/otel-pizza-workshop-dryrun`, `baseBranch=main`,
+  `targetCheckRuleId`, `targetCheckRuleName`.
+
+### Doc defects in 07-close-the-loop.md
+
+1. **`git push -u origin break-it-again` is wrong for anyone who didn't fork, and
+   dangerous for the facilitator.** In this checkout `origin` is
+   `git@github.com:dash0hq/otel-pizza-workshop.git` — the canonical repo. Following
+   the doc literally pushes a revert-the-fix branch to the shared upstream. Either
+   say "push to *your fork*" explicitly, or drop the push entirely.
+2. **The push is not needed at all.** The agent's draft PR targets the branch the
+   *connected repository* has; my local revert was enough to generate failing
+   telemetry, and PR #3 opened against the fork's `main` without `break-it-again`
+   existing on any remote. Steps 41-48 of the doc add a remote-write step, a
+   footgun, and nothing else. Replace with: "revert locally and rebuild — you don't
+   need to push anything."
+3. **`http://localhost:3000/order` in the loop snippet is right, but 04/05 never
+   establish that port.** Segment 1 has people ordering through the browser at
+   :8080. The first time a raw curl appears is here, and the frontend's own path is
+   `${ORDER_API_URL}/order`, not `/api/orders` — I guessed wrong once and got 25
+   404s. Put the curl one-liner in segment 1 so it's already familiar.
+4. **30 requests with `sleep 1` may not trip a 15-minute-window rule.** The doc's
+   loop is 30 seconds of traffic. My v2 rule needs ≥20 requests *and* a sustained
+   ratio over 15m; I ran 45 failures plus 11 successes over ~3 minutes. If segment 6
+   produces a longer window (it should), segment 7's traffic snippet has to match it.
+   **The two segments are coupled and the docs don't acknowledge it.**
+5. **Budget.** 20 minutes covers Prompt 5 (~2.5 min), reading a long walkthrough,
+   filling and creating the automation, reverting, rebuilding (~1 min), 3 minutes of
+   traffic, 4 minutes of run, then reading the PR. That is 20 minutes with zero slack
+   and assumes nothing stalls. 25 would be honest.
+
+### Put it back
+
+`git checkout agent-instrumentation && docker compose up -d --build` — Hawaiian Large
+returns 200 again. The doc's "Put it back" says `git checkout main`, which is only
+right if you merged the fix to main; on a working branch it silently un-fixes the app.

@@ -1,6 +1,6 @@
 # 6. Alert on it
 
-**15 minutes.** You'll end with a check rule you can defend to someone who
+**25 minutes.** You'll end with a check rule you can defend to someone who
 gets woken by it.
 
 You found the bug by ordering four pizzas. That doesn't scale. This segment is
@@ -11,6 +11,11 @@ about making the *next* one find you.
 **Prompt 4** in [prompts.md](prompts.md), in the Dash0 app. You want a check
 rule on order-service's error rate — one that would have caught what you just
 fixed, and won't fire on noise.
+
+> **Agent0 proposes; you create.** It renders the rule as a preview card in
+> the thread with a **Create check rule** button. Nothing exists until you
+> click it — and nothing will tell you that you haven't. Argue first, click
+> last.
 
 ## The threshold argument is the segment
 
@@ -25,9 +30,10 @@ rate was before the fix rather than guessing. So:
 - **"Alert on any error"** — you'll be woken by every dropped connection and
   every bot probing your API. You'll mute it within a week, and then it will
   miss the real one.
-- **"Alert at 50% error rate"** — safe from noise, and useless. A bug
-  affecting one product line rarely moves the overall rate that far, and
-  you'd have shipped it for days.
+- **"Alert at 50% error rate"** — a coin flip here, which is the problem.
+  These two bugs happened to push the rate to roughly 40-50%, so 50% might
+  have caught it and might not, depending on what the room ordered. A
+  threshold that close to your observed rate has no headroom.
 - Somewhere between those is a number that depends on things telemetry can't
   tell you: how much traffic you get, how bad a failed pizza order is, and
   who's awake.
@@ -36,6 +42,18 @@ Then the part people skip — **over what window?** A 10% error rate sustained
 for five minutes is an incident. The same rate for fifteen seconds during a
 deploy is Tuesday. A short window catches things faster and cries wolf more
 often. Pick one, and be able to say why.
+
+And the question that improves the rule more than any other: **how many
+requests does it take before a ratio means anything?** 20% sounds cautious
+until it fires on two failures out of ten. A volume gate — "at least N
+requests in the window" — is usually the difference between a rule people
+keep and a rule people mute. Ask the agent for one; it won't always offer.
+
+**Push back at least twice.** In the dry run, arguing three points moved
+the window from 5 to 15 minutes, added a 20-request volume gate, and fixed
+a filter that was quietly excluding the wrong traffic. The first answer is
+never the best one, and accepting it is the most common way to leave this
+segment with a worse rule than the person next to you.
 
 > If you can't explain to an on-call engineer why this rule woke them, it's
 > not a good rule. That's the bar, not "it fires when the app is broken."

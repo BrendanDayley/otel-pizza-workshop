@@ -243,7 +243,63 @@ can construct** — `/traces/<id>` 404s. It's Tracing → funnel icon → paste,
 matching on `otel.trace.id`. Without that sentence the entire
 "verify, don't trust" discipline is unusable.
 
-Segments 6 and 7 remain unexecuted.
+### Segments 6 and 7 — the loop closed
+
+**2026-09-19. All seven segments have now run end to end.**
+
+Segment 6: Agent0 looked up the real pre-fix rate rather than inventing one
+("35 requests, 14 failed — 40%; per-5-minute windows ranged 37% to 50%"),
+and answered "would this have fired?" by running the query. **Arguing with
+it materially improved the rule** — three objections moved the window 5m →
+15m, added a ≥20-request volume gate, and corrected a filter. It also
+refused to over-claim from a baseline it found, calling its own threshold
+"a judgment call with headroom, not anchored to a measured quiet period".
+
+Segment 7, timed:
+
+| UTC | |
+|---|---|
+| 16:58 | rebuilt on the revert, traffic starts |
+| 17:02 | automation fires |
+| 17:06 | **draft PR #3 opens on the fork** |
+
+**Threshold breach → draft PR in about four minutes**, against roughly 25
+for the human-driven version in segment 5. The run reported SUCCESS at
+4m21s and 3.6 credits. PR #3 is a genuine investigation: measured ratio
+45/56 = 80.36% with the evaluation window, the check rule's own PromQL
+re-run against it, five failing trace IDs plus a successful comparison
+trace, and file/line/commit for the cause. Draft confirmed via the API.
+
+**It fixed one bug, not two — and it was right to.** The load traffic was
+all Hawaiian Large; kitchen rejects those before delivery is ever called,
+so the size-rank bug emitted no telemetry. An agent can only diagnose what
+the traffic exercised. **This is the best teaching moment in the workshop**
+— 07 now sends a mix and says so explicitly.
+
+### Product issues worth raising
+
+- **Agent0 proposes, the human clicks.** Both the check rule and the
+  automation are preview cards with a button. Nothing is created until you
+  press it and nothing warns you otherwise. Both docs now say so.
+- **The UI sat on "Thinking…" for ~20 minutes** on a turn that took 2m34s,
+  with an empty reasoning panel; the answer appeared, stamped with the real
+  duration, only on click. **In a room of thirty this reads as "my agent is
+  broken".** If it hangs past ~3 minutes, tell people to click into the
+  thread or reload.
+- **Agent0 stated a wrong fact about Dash0**: that `failed_check.new` has
+  no per-rule filter, "confirmed by probing the validator". The UI has a
+  **Check rules** picker. It then wrote a prompt-level guard instead of
+  using it.
+- **Stray Chinese characters** in one Agent0 sentence ("regardless of the
+  ratio's 真实性"). Someone will screenshot it.
+
+### Timing, from the real run
+
+Segments 6 and 7 were budgeted 15 and 20 minutes and took ~35 and ~25.
+Both are now 25 in the docs, which makes the total 150 rather than 120 —
+**decide what to cut, or say up front that it's a half-day.** The honest
+options are dropping segment 7 to a demo from the front, or shortening the
+UI tour.
 
 The run also confirmed the good part: both planted failures reproduce
 exactly, returning `500` with `details` of `503` (Large) and `403`
@@ -258,8 +314,11 @@ exactly, returning `500` with `details` of `503` (Large) and `403`
       files. Segments 3, 5 and 7 are viable as designed. The GitHub
       connector must be installed on the fork first, which needs a human
       OAuth grant — make that pre-work.
-- [ ] **Check rules and alert-triggered automation** — participant-drivable
-      today? Gates segments 6 and 7. → `__________`
+- [x] **Check rules and alert-triggered automation** — participant-drivable
+      today? **YES, with one caveat: Agent0 proposes and the participant
+      clicks a button to create.** Confirmed end to end 2026-09-19,
+      including an alert-triggered automation that opened draft PR #3 on
+      its own.
 - [ ] **Token permission labels** for ingest vs Agent0. → `__________`
 - [ ] **Individual signups or one shared org?** Shared pins the region and
       lets you debug anyone in seconds, but ~25 ingesters plus ~25 agents
@@ -267,14 +326,23 @@ exactly, returning `500` with `details` of `503` (Large) and `403`
 - [ ] **Region.** Wrong region is a silent ingest failure whose only symptom
       is "no traces". Tell people theirs explicitly. → `__________`
 
-## Not rehearsed
+## Rehearsal status
 
-The full agent-driven arc has never been run end to end against a live Dash0
-org. **Do a dry run of segments 3, 5, 6 and 7 in order before this is in
-front of a room** — that dry run is also what answers the questions above.
+**The full arc ran end to end on 2026-09-19**, segments 1 through 7, against
+a live Dash0 org — including Agent0 writing the instrumentation, finding
+both bugs, and an alert-triggered automation opening a draft PR by itself.
 
-What *has* been verified: `docker compose up` builds and runs, and the four
-orders in the table above behave exactly as described.
+Caveats before you treat that as proof:
+
+- **One run, by an agent, not a person.** It was more patient than a
+  participant will be, and it never got confused by the UI in the way a
+  newcomer does.
+- **It needed a working org.** The first attempt died on the region
+  mismatch; budget for at least one participant hitting an environment
+  problem you can't fix in the room.
+- **Timings came in over budget** on every agent-driven segment.
+- **Nobody has run this with more than one participant**, so nothing is
+  known about rate limits with ~25 ingesters and ~25 agents on one org.
 
 ## Deliberately out of scope
 
