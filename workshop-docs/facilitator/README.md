@@ -180,8 +180,33 @@ pre-flight curl in segment 2 is the only thing that catches it.
    silently compare two different environments. Check what each participant's
    MCP endpoint is actually bound to.
 
-Because of these, **segments 3-7 have still never been executed**, and the
-open questions below are still open.
+### What ran once the region was fixed
+
+Segment 3 then worked, and it answered the workshop's biggest open question:
+**Agent0 wrote the instrumentation and opened the PR itself.**
+
+What it produced, worth knowing because it differs from what the prompt
+asked for:
+
+- **A `--require ./instrumentation.js` bootstrap per service**, using
+  `NodeSDK` with `getNodeAutoInstrumentations()` — not the `NODE_OPTIONS`
+  env-var approach the prompt describes. Still auto-instrumentation, still
+  no manual spans, but it added ~23 lines of code per service and pulled in
+  metrics exporters nobody asked for. A fair thing to point at in segment 4
+  when discussing agent divergence.
+- **A collector on 4317/4318** with its own config file.
+- **Invented environment variable names.** It wrote `${DASH0_ENDPOINT}`
+  while `.env` had `DASH0_OTLP_ENDPOINT`, because `.env` is gitignored and
+  it could not read it. Compose substituted an empty string and the
+  collector crash-looped.
+
+That last one is now covered three ways: Prompt 1 names the variables
+explicitly, segment 3's review checklist has a `grep` comparison, and
+troubleshooting has the crash-loop symptom. **It's also a genuinely good
+teaching moment** — the failure was loud and the docs' own guidance found
+it. Consider not over-protecting against it.
+
+Segments 4-7 remain unexecuted.
 
 The run also confirmed the good part: both planted failures reproduce
 exactly, returning `500` with `details` of `503` (Large) and `403`
@@ -189,10 +214,13 @@ exactly, returning `500` with `details` of `503` (Large) and `403`
 
 ## Open questions — answer before you send the pre-work mail
 
-- [ ] **Can Agent0 write code and open PRs on a participant's fork?** Gates
-      segments 3, 5 and 7. If it turns out read-only, segment 3 becomes
-      Claude Code with the Dash0 OTel skills and the arc survives.
-      → `__________`
+- [x] **Can Agent0 write code and open PRs on a participant's fork?**
+      **YES — confirmed 2026-09-18.** Prompt 1 produced a real PR on a
+      participant fork, authored by the `dash0-dev` GitHub App bot:
+      `RaphaelManke/otel-pizza-workshop-dryrun#1`, +8126/-42 across 12
+      files. Segments 3, 5 and 7 are viable as designed. The GitHub
+      connector must be installed on the fork first, which needs a human
+      OAuth grant — make that pre-work.
 - [ ] **Check rules and alert-triggered automation** — participant-drivable
       today? Gates segments 6 and 7. → `__________`
 - [ ] **Token permission labels** for ingest vs Agent0. → `__________`

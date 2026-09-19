@@ -39,6 +39,18 @@ While it works, read the next section — you'll want it ready.
 4. **Does the collector actually route to Dash0?** An exporter block that
    points at `localhost:4317` with no auth header is a pipeline to nowhere.
 
+5. **Do the environment variable names match your `.env`?** The agent
+   couldn't read `.env` — it's gitignored — so it *invented* the names it
+   expects. If it writes `${DASH0_ENDPOINT}` and your file says
+   `DASH0_OTLP_GRPC_ENDPOINT`, compose substitutes an empty string and the
+   collector dies on startup. Compare the two lists before you merge:
+   ```bash
+   grep -o 'DASH0_[A-Z_]*' docker-compose.yml otel-collector-config.yaml | sort -u
+   cut -d= -f1 .env
+   ```
+   Either rename in `.env` or ask the agent to use your names. This one bit
+   the first dry run.
+
 Merge when you're happy.
 
 ## Pull and rebuild

@@ -37,6 +37,10 @@ Dash0:
 - The auth token is in pizza-app/.env as DASH0_AUTH_TOKEN. That file is
   gitignored, so you can't read it and you don't need to — reference the
   environment variable. Never put the token value in any committed file.
+- Use exactly these two variable names and do not invent others:
+  DASH0_OTLP_GRPC_ENDPOINT and DASH0_AUTH_TOKEN. They already exist in my
+  .env; a name that doesn't match resolves to an empty string and the
+  collector won't start.
 - Make sure trace context propagates across the HTTP calls between services,
   so one order produces one connected trace.
 

@@ -99,6 +99,26 @@ In this order — the first one accounts for most cases:
 6. **You're looking at the wrong dataset.** Especially in a shared
    organisation.
 
+## The collector starts, then immediately dies — over and over
+
+Check compose's own output first. A line like:
+
+```
+WARN The "DASH0_ENDPOINT" variable is not set. Defaulting to a blank string.
+```
+
+means the name the agent used doesn't exist in your `.env`, so the endpoint
+resolved to nothing. Compare the two:
+
+```bash
+grep -o 'DASH0_[A-Z_]*' docker-compose.yml otel-collector-config.yaml | sort -u
+cut -d= -f1 .env
+```
+
+Rename in `.env` to match, or go back to the agent and tell it which names
+you actually have. **This is a good failure** — it's loud. The dangerous
+version is a collector that starts happily and drops everything.
+
 ## Traces arrive but they're all separate
 
 One span per service, no connected trace. The context isn't propagating — the
