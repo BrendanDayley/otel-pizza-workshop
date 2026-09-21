@@ -9,15 +9,46 @@ disagree with the finding before any code changes.
 
 ## Step 1 — Diagnose
 
-**Prompt 2** from [prompts.md](prompts.md). You can run this over MCP from
-your editor or in the Dash0 app — diagnosis is read-only either way.
+Run this over MCP from your editor, or in the Dash0 app — diagnosis is
+read-only either way.
 
-You're asking almost nothing: orders are failing, here's the timeframe,
-what's going on? **Don't tell it where to look.** You want to find out what
-it works out unaided — if you point it at a service, you've done the
-diagnosis and it will agree with you.
+```text
+Some of my pizza orders are failing. All the website says is "Failed to
+process order", which doesn't tell me anything.
 
-The evidence comes next, from the follow-ups.
+Can you look at the data in Dash0 and work out what's actually going wrong?
+Roughly the last 30 minutes.
+```
+
+That's the whole prompt. **Don't tell it where to look** — if you point it
+at a service you've done the diagnosis yourself, and it will agree with
+you whether or not you were right.
+
+## The follow-ups
+
+Ask these in order, as you would of a colleague. The first is the one that
+matters:
+
+```text
+How do you know? Can you point me at the actual requests you're looking at?
+```
+
+```text
+Is that everything, or is something else broken too?
+```
+
+```text
+What couldn't you tell from the data?
+```
+
+That last one produced the best answer of the whole dry run — the agent
+volunteered a limitation nobody had asked about, and it was real.
+
+And if it's vague about the mechanism:
+
+```text
+What's different between an order that works and one that doesn't?
+```
 
 ## Judge the answer before you accept it
 
@@ -48,10 +79,8 @@ An agent will always give you an answer. Your job is deciding whether it's
 ## There is more than one thing wrong
 
 Segment 1 gave you **two** distinct failures that look identical from the
-browser. If the agent reports one and stops, that's a partial answer — push
-it:
-
-> Is that everything, or is something else broken too?
+browser. If the agent reports one and stops, that's a partial answer — the
+second follow-up above is what pushes it.
 
 Note what that question *doesn't* do: it doesn't tell the agent what the
 second thing is, or even that there definitely is one. Getting it to
@@ -61,11 +90,12 @@ rarely one bug.
 
 ## If it's stuck
 
-Ask about what you can see, not about what you suspect:
+Ask about what you can see, not about what you suspect — the last
+follow-up above, or:
 
-> What's different between an order that works and one that doesn't?
-
-> Which part of the system does the failure start in?
+```text
+Which part of the system does the failure start in?
+```
 
 Notice the limitation from segment 4 biting here: **the spans don't carry the
 pizza type or size.** The agent can see *that* a request failed, not *what was
@@ -76,8 +106,15 @@ whole other workshop.
 
 ## Step 2 — Fix
 
-Once you believe the diagnosis: continue the thread **in the Dash0 app** and
-use **Prompt 3** to ask for a PR.
+Once you believe the diagnosis, continue the same thread **in the Dash0
+app**:
+
+```text
+That matches what I can see. Can you fix it and open a pull request?
+
+I'd rather fix the actual problem than hide the error message. Keep the
+change small, and say in the PR how I can check that it worked.
+```
 
 Review it on the same terms as segment 3:
 

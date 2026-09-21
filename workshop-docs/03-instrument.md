@@ -7,13 +7,29 @@ You are not going to write instrumentation. You're going to ask for it,
 
 ## Ask
 
-In the **Dash0 app** — this step writes code, so it can't be MCP — start a new
-Agent0 thread and use **Prompt 1** from [prompts.md](prompts.md).
+In the **Dash0 app** — this step writes code, so it can't be MCP — start a
+new Agent0 thread and paste this. Name your repository if your fork isn't
+called `otel-pizza-workshop`.
 
-You're asking, in plain terms, to be able to see what the app is doing —
-and leaving the *how* to the agent. It has to decide on its own that this
-means auto-instrumentation, a collector, an exporter and credentials
-handling. Whether it decides well is what you're about to review.
+```text
+I have a pizza ordering app in this repository — three Node services and a
+web frontend, all run with Docker Compose. Right now I can't see anything
+about what it's doing when an order comes in.
+
+Can you set it up so I can see what's happening, in Dash0? I have an
+account, and my credentials are in pizza-app/.env.
+
+I don't really know OpenTelemetry, so use whatever the sensible defaults
+are. I'd rather not end up with tracing code scattered all through the app
+if there's a way to avoid that. Open a pull request and tell me what you
+changed.
+```
+
+Notice what that doesn't say. You're asking, in plain terms, to see what
+the app is doing, and leaving the *how* to the agent — it has to work out
+on its own that this means auto-instrumentation, a collector, an exporter
+and somewhere to keep credentials. **Whether it decides well is what you're
+about to review.**
 
 While it works, read the next section — you'll want it ready.
 

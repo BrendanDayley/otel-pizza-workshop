@@ -8,9 +8,19 @@ about making the *next* one find you.
 
 ## Ask for it
 
-**Prompt 4** in [prompts.md](prompts.md), in the Dash0 app. You want a check
-rule on order-service's error rate — one that would have caught what you just
-fixed, and won't fire on noise.
+In the Dash0 app:
+
+```text
+I only found this because I happened to order a pizza. I don't want to find
+out that way next time.
+
+Can you set up an alert that would have caught it? I don't know what a
+sensible threshold is — what do you suggest, and would it actually have
+gone off while this was broken?
+```
+
+You're not telling it what to measure or where to set the line. Both of
+those are the conversation you're about to have.
 
 > **Agent0 proposes; you create.** It renders the rule as a preview card in
 > the thread with a **Create check rule** button. Nothing exists until you
@@ -49,11 +59,26 @@ until it fires on two failures out of ten. A volume gate — "at least N
 requests in the window" — is usually the difference between a rule people
 keep and a rule people mute. Ask the agent for one; it won't always offer.
 
-**Push back at least twice.** In the dry run, arguing three points moved
-the window from 5 to 15 minutes, added a 20-request volume gate, and fixed
-a filter that was quietly excluding the wrong traffic. The first answer is
-never the best one, and accepting it is the most common way to leave this
-segment with a worse rule than the person next to you.
+**Push back at least twice.** These three each improved the rule in the dry
+run — the window went from 5 minutes to 15, a 20-request volume gate
+appeared, and a filter that was quietly counting the wrong traffic got
+fixed:
+
+```text
+How many orders need to happen before that percentage means anything?
+```
+
+```text
+What happens if it's quiet and two orders fail?
+```
+
+```text
+Is anything getting counted in that number that shouldn't be?
+```
+
+The first answer is never the best one, and accepting it is the most
+common way to leave this segment with a worse rule than the person next to
+you.
 
 > If you can't explain to an on-call engineer why this rule woke them, it's
 > not a good rule. That's the bar, not "it fires when the app is broken."

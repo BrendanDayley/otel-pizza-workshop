@@ -1,6 +1,10 @@
 # Agent0 prompts
 
-These are written the way you'd actually ask — plainly, without jargon, and
+**Every prompt here also appears inline in the segment that uses it** — you
+don't need this page to follow the workshop. It's the one-pager: all of
+them together, for copying ahead of time or for reading on their own.
+
+They're written the way you'd actually ask — plainly, without jargon, and
 without telling the agent how to do its job. **That's deliberate.** You're
 here to find out what Agent0 works out on its own; a prompt that specifies
 the answer only proves you already knew it.

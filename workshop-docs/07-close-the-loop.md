@@ -19,9 +19,15 @@ in the last segment.
 
 ## Wire it
 
-**Prompt 5** in [prompts.md](prompts.md), in the Dash0 app. Connect your check
-rule to an automation that, when it fires, investigates and opens a **draft**
-PR.
+In the Dash0 app, continuing from your check rule:
+
+```text
+Can you make it so that when that alert goes off, you look into it and open
+a pull request with a fix — without me having to ask?
+
+Keep the PR as a draft. I want to look at it before anything gets merged.
+Show me what you've set up before you turn it on.
+```
 
 > **Same as segment 6: Agent0 proposes, you click.** It walks you through
 > the automation and offers a **Set up automation** button. Until you press
@@ -129,7 +135,8 @@ This segment has the most moving parts of any in the workshop, and it's the
 one most likely to stall. That's fine — **watch the host's loop run instead**,
 and take the manual version home:
 
-> When the alert fires, open Agent0 and paste Prompt 2.
+> When the alert fires, open Agent0 and paste the diagnose prompt from
+> [segment 5](05-troubleshoot.md).
 
 That's the same value with a human trigger, and it works today regardless.
 
