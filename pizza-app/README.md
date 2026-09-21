@@ -44,9 +44,9 @@ docker compose down
 The terminal shows all four services interleaved:
 
 ```
-order-service    | Order received: PIZZA-123...
-kitchen-service  | Starting to cook...
-delivery-service | Assigning driver...
+order-service    | {"level":30,...,"orderId":"PIZZA-123...","msg":"Order received"}
+kitchen-service  | {"level":30,...,"orderId":"PIZZA-123...","msg":"Starting to cook"}
+delivery-service | {"level":30,...,"orderId":"PIZZA-123...","msg":"Assigning driver"}
 ```
 
 One service on its own:

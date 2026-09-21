@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const pino = require('pino');
+
+const logger = pino({ name: 'delivery-service' });
 
 const app = express();
 const PORT = 3002;
@@ -31,7 +34,7 @@ const SIZE_RANK = {
 
 // Find nearest available driver whose bag fits this pizza
 async function findNearestDriver(size) {
-  console.log(`Searching for nearest driver for a ${size} pizza...`);
+  logger.info({ size }, 'Searching for nearest driver');
   await sleep(100);
   
   if (NO_DRIVERS) {
@@ -39,7 +42,7 @@ async function findNearestDriver(size) {
   }
   
   const eligible = drivers.filter(d => SIZE_RANK[d.bagSize] >= SIZE_RANK[size]);
-  console.log(`${eligible.length} of ${drivers.length} drivers can carry a ${size} pizza`);
+  logger.info({ size, eligible: eligible.length, total: drivers.length }, 'Drivers able to carry this pizza');
   
   // Sort by distance and return closest
   const sortedDrivers = [...eligible].sort((a, b) => a.distance - b.distance);
@@ -55,13 +58,13 @@ app.get('/health', (req, res) => {
 app.post('/assign-driver', async (req, res) => {
   const { orderId, customerName, size } = req.body;
   
-  console.log(`Assigning driver for order ${orderId} (customer: ${customerName}, size: ${size})`);
+  logger.info({ orderId, customerName, size }, 'Assigning driver');
   
   // Find nearest driver
   const driver = await findNearestDriver(size);
   
   if (!driver) {
-    console.log(`No drivers available for order ${orderId}`);
+    logger.warn({ orderId }, 'No drivers available');
     return res.status(503).json({
       error: 'No drivers available',
       orderId,
@@ -74,7 +77,7 @@ app.post('/assign-driver', async (req, res) => {
   
   await sleep(150);
   
-  console.log(`Driver ${driver.name} assigned to order ${orderId} (${driver.distance}km away)`);
+  logger.info({ orderId, driver: driver.name, distanceKm: driver.distance }, 'Driver assigned');
   
   res.json({
     orderId,
@@ -90,7 +93,7 @@ app.post('/assign-driver', async (req, res) => {
 app.get('/status/:orderId', (req, res) => {
   const { orderId } = req.params;
   
-  console.log(`Delivery status check for order ${orderId}`);
+  logger.info({ orderId }, 'Delivery status check');
   
   res.json({
     orderId,
@@ -100,7 +103,5 @@ app.get('/status/:orderId', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Delivery Service listening on port ${PORT}`);
-  console.log(`No drivers mode: ${NO_DRIVERS ? 'ENABLED (all busy!)' : 'DISABLED'}`);
-  console.log(`Available drivers: ${drivers.length}`);
+  logger.info({ port: PORT, noDrivers: NO_DRIVERS, availableDrivers: drivers.length }, 'Delivery Service listening');
 });

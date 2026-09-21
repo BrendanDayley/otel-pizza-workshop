@@ -1,5 +1,8 @@
 const express = require('express');
 const cors = require('cors');
+const pino = require('pino');
+
+const logger = pino({ name: 'kitchen-service' });
 
 const app = express();
 const PORT = 3001;
@@ -27,7 +30,7 @@ app.get('/health', (req, res) => {
 app.post('/check-availability', async (req, res) => {
   const { orderId, pizzaType } = req.body;
   
-  console.log(`🔍 Checking availability for order ${orderId}: ${pizzaType}`);
+  logger.info({ orderId, pizzaType }, 'Checking availability');
   
   await sleep(50);
   
@@ -43,7 +46,7 @@ app.post('/check-availability', async (req, res) => {
 app.post('/cook', async (req, res) => {
   const { orderId, pizzaType, size } = req.body;
   
-  console.log(`Starting to cook order ${orderId}: ${size} ${pizzaType}`);
+  logger.info({ orderId, pizzaType, size }, 'Starting to cook');
   
   if (pizzaType === 'Hawaiian') {
     return res.status(403).json({
@@ -54,7 +57,7 @@ app.post('/cook', async (req, res) => {
   
   // Check oven temperature
   const ovenStatus = await checkOvenTemperature();
-  console.log(`Oven temperature: ${ovenStatus.temperature}°F`);
+  logger.info({ orderId, ovenTemperature: ovenStatus.temperature }, 'Oven temperature');
   
   // Simulate cooking time
   let cookingTime = 15; // minutes
@@ -67,14 +70,14 @@ app.post('/cook', async (req, res) => {
   
   // Simulate slow kitchen (broken oven scenario)
   if (SLOW_KITCHEN) {
-    console.log(`SLOW MODE: Oven is having issues...`);
+    logger.warn({ orderId }, 'Slow mode: oven is having issues');
     await sleep(5000); // 5 second delay
     cookingTime = 30; // Takes longer
   } else {
     await sleep(300); // Normal cooking simulation
   }
   
-  console.log(`Order ${orderId} cooked successfully in ${cookingTime} minutes`);
+  logger.info({ orderId, cookingTime }, 'Order cooked successfully');
   
   res.json({
     orderId,
@@ -87,6 +90,5 @@ app.post('/cook', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Kitchen Service listening on port ${PORT}`);
-  console.log(`Slow mode: ${SLOW_KITCHEN ? 'ENABLED (oven is broken!)' : 'DISABLED'}`);
+  logger.info({ port: PORT, slowKitchen: SLOW_KITCHEN }, 'Kitchen Service listening');
 });

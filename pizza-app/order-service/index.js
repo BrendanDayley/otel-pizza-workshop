@@ -1,6 +1,9 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const pino = require('pino');
+
+const logger = pino({ name: 'order-service' });
 
 const app = express();
 const PORT = 3000;
@@ -26,11 +29,11 @@ app.post('/order', async (req, res) => {
   const { pizzaType, size, customerName } = req.body;
   const orderId = generateOrderId();
   
-  console.log(`Order received: ${orderId} - ${size} ${pizzaType} for ${customerName}`);
+  logger.info({ orderId, pizzaType, size, customerName }, 'Order received');
   
   try {
     // Step 1: Check kitchen availability
-    console.log(`Checking kitchen availability for order ${orderId}`);
+    logger.info({ orderId }, 'Checking kitchen availability');
     const kitchenResponse = await axios.post(`${KITCHEN_SERVICE_URL}/check-availability`, {
       orderId,
       pizzaType,
@@ -38,7 +41,7 @@ app.post('/order', async (req, res) => {
     });
     
     if (!kitchenResponse.data.available) {
-      console.log(`Kitchen not available for order ${orderId}`);
+      logger.warn({ orderId }, 'Kitchen not available');
       return res.status(503).json({ 
         error: 'Kitchen is currently unavailable',
         orderId 
@@ -46,7 +49,7 @@ app.post('/order', async (req, res) => {
     }
     
     // Step 2: Start cooking
-    console.log(`Starting to cook order ${orderId}`);
+    logger.info({ orderId }, 'Starting to cook');
     const cookResponse = await axios.post(`${KITCHEN_SERVICE_URL}/cook`, {
       orderId,
       pizzaType,
@@ -54,14 +57,14 @@ app.post('/order', async (req, res) => {
     });
     
     // Step 3: Assign delivery driver
-    console.log(`Assigning driver for order ${orderId}`);
+    logger.info({ orderId }, 'Assigning driver');
     const deliveryResponse = await axios.post(`${DELIVERY_SERVICE_URL}/assign-driver`, {
       orderId,
       customerName,
       size
     });
     
-    console.log(`Order ${orderId} completed successfully`);
+    logger.info({ orderId }, 'Order completed successfully');
     
     res.json({
       orderId,
@@ -75,7 +78,7 @@ app.post('/order', async (req, res) => {
     });
     
   } catch (error) {
-    console.error(`Error processing order ${orderId}:`, error.message);
+    logger.error({ orderId, err: error }, 'Error processing order');
     res.status(500).json({ 
       error: 'Failed to process order',
       orderId,
@@ -87,7 +90,7 @@ app.post('/order', async (req, res) => {
 // Get order status
 app.get('/order/:orderId', (req, res) => {
   const { orderId } = req.params;
-  console.log(`Status check for order ${orderId}`);
+  logger.info({ orderId }, 'Status check');
   
   res.json({
     orderId,
@@ -97,7 +100,9 @@ app.get('/order/:orderId', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Order Service listening on port ${PORT}`);
-  console.log(`Kitchen Service URL: ${KITCHEN_SERVICE_URL}`);
-  console.log(`Delivery Service URL: ${DELIVERY_SERVICE_URL}`);
+  logger.info({
+    port: PORT,
+    kitchenServiceUrl: KITCHEN_SERVICE_URL,
+    deliveryServiceUrl: DELIVERY_SERVICE_URL
+  }, 'Order Service listening');
 });

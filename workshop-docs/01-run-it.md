@@ -51,8 +51,12 @@ separate problems, and the browser never shows it: the page displays
 Now the logs. In the terminal running compose:
 
 ```
-order-service     | Error processing order PIZZA-1731...: Request failed with status code 503
+order-service | {"level":50,...,"orderId":"PIZZA-1731...","err":{...},"msg":"Error processing order"}
 ```
+
+The services log as JSON — they use [pino](https://getpino.io), which is
+what a production Node service would do. If it's hard to read, pipe it
+through `jq`.
 
 That's everything order-service — the one the browser talks to — is prepared
 to tell you. It caught an error from somewhere downstream and forwarded the
@@ -80,8 +84,9 @@ docker compose logs delivery-service | tail -20
 docker compose logs kitchen-service | tail -20
 ```
 
-**One of your two failures explains itself here.** A service logged, in
-plain English, why it refused. Find it.
+**One of your two failures explains itself here.** A service logged exactly
+why it refused, and it's not subtle once you're looking at the right
+service. Find it.
 
 **The other one doesn't.** Go and look for it. The service logs that it
 started handling the order, and then — nothing. No error, no refusal, no
@@ -97,9 +102,11 @@ on its own:
 - You only found the first one because you already knew which service to
   look in — and you only knew that because there are three. On a system with
   forty services, "grep everything" is not a strategy.
-- Even having found it, **nothing ties that line to your order.** At twenty
-  orders a second, interleaved with three other services, which of those
-  refusals was yours?
+- Even having found it, **nothing ties that line to your order.** Look
+  closely at the most diagnostic line in the delivery logs — the one
+  showing how many drivers were eligible. It has no `orderId` on it at all,
+  because the function that logs it was never given one. At twenty orders a
+  second, which of those was yours?
 
 > **This is the argument for tracing.** Not "logs are bad" — logs are great,
 > right up to the moment the failure crosses a service boundary. There, the
