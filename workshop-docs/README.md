@@ -42,8 +42,9 @@ cost the room nothing at home and twenty minutes here.
 - [ ] **Forked** <https://github.com/dash0hq/otel-pizza-workshop> and cloned
       *your fork* — every segment from 3 onward opens a PR against a repo you
       need to own
-- [ ] **A Dash0 account**, and you know which region it's in — and **which
-      URL to log in at**, which may not be `app.dash0.com`. Ask your host.
+- [ ] **A Dash0 account** — sign up with your email at
+      [dash0.com](https://dash0.com). You get your own organisation on the
+      free trial; note which region it puts you in.
 - [ ] **Ran `docker compose up` once** so the images are built and cached
 - [ ] Optional: the **GitHub CLI** (`gh`), which makes the fork step one
       command instead of a browser trip

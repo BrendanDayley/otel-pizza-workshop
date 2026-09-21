@@ -176,6 +176,14 @@ A full participant dry run on **2026-09-18** got through segment 1 exactly
 as written, then stopped dead in segment 2/3 on two environment faults.
 Neither is a docs problem. Both must be fixed before a room sits down.
 
+> **Since resolved by a decision, not a fix:** participants now sign up
+> themselves at dash0.com and get their own trial organisation on
+> production. The fault below was specific to a hand-provisioned org on the
+> dev environment and **cannot occur on a self-service signup**, because
+> the org is created in a region that exists. Kept here because the failure
+> *signature* is worth recognising, and because it's the reason the
+> pre-flight curl exists in segment 2.
+
 ### Root cause: the org's home region doesn't exist in that environment
 
 Both faults are one fault. The API says so directly, in a response body the
@@ -363,9 +371,10 @@ exactly, returning `500` with `details` of `503` (Large) and `403`
       including an alert-triggered automation that opened draft PR #3 on
       its own.
 - [ ] **Token permission labels** for ingest vs Agent0. → `__________`
-- [ ] **Individual signups or one shared org?** Shared pins the region and
-      lets you debug anyone in seconds, but ~25 ingesters plus ~25 agents
-      share one rate-limit bucket. → `__________`
+- [x] **Individual signups or one shared org?** **Individual.** Everyone
+      signs up at dash0.com with their own email and gets their own trial
+      organisation on production. No shared dataset to collide in, no
+      shared rate-limit bucket, and no dev environment involved.
 - [ ] **Region.** Wrong region is a silent ingest failure whose only symptom
       is "no traces". Tell people theirs explicitly. → `__________`
 

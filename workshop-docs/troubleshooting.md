@@ -63,9 +63,9 @@ In this order — the first one accounts for most cases:
    `200`, nothing downstream can work and you're debugging the wrong layer.
    A `421` in particular is not yours to fix — tell the host.
 
-2. **Wrong region.** Your endpoint must match the region your organisation is
-   in. The wrong region doesn't error; it accepts the data and you never see
-   it. Check the endpoint host against Organization settings → Endpoints.
+2. **Wrong region.** Your endpoint must match the region your organisation
+   is in — copy the host from your own Organization settings → Endpoints,
+   not from an example. A wrong region can fail quietly rather than loudly.
 
 3. **Collector isn't running.**
    ```bash
@@ -88,16 +88,11 @@ In this order — the first one accounts for most cases:
    ```
 
 5. **Auth token.** A 401 or 403 in the collector logs. Check `.env` is
-   actually being read — `docker compose config` shows the resolved values.
+   actually being read — `docker compose config` shows the resolved values
+   — and that the token didn't get truncated on the way in.
 
-   **Don't assume a 401 means the token is wrong.** If the same token gets a
-   `200` from `/api/dashboards` but a `401` from ingest, the token is fine
-   and your organization isn't served from the region you're sending to.
-   The [segment 2 check](02-connect-dash0.md) tells them apart. That one is
-   a host problem — stop and report it rather than regenerating tokens.
-
-6. **You're looking at the wrong dataset.** Especially in a shared
-   organisation.
+6. **You're looking at the wrong dataset**, or a time range that predates
+   your first trace.
 
 ## The collector starts, then immediately dies — over and over
 

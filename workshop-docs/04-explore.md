@@ -11,8 +11,8 @@ say so. That's a real finding, not a mistake (more on that at the end).
 Before the interesting part, three things that catch people out — check all
 three whenever a view looks empty:
 
-1. **Dataset.** The selector is at the top of the screen. If you're sharing
-   an organisation with the room, make sure you're on yours.
+1. **Dataset.** The selector is at the top of the screen — `default` is
+   where your traces are landing.
 2. **Time range.** Defaults are often wider or narrower than you want. Set
    it to the last 15 minutes — you placed those orders a moment ago.
 3. **Filters carried over** from the last thing you clicked. An empty list

@@ -7,18 +7,19 @@ Nothing is sending telemetry yet. This segment is about getting the
 destination ready and — more importantly — letting Agent0 see your source
 code, so that in the next segment it can write the instrumentation itself.
 
-## Log in and find your dataset
+## Sign up and find your dataset
 
-Open Dash0 and sign in. **Use the URL your host gave you** — if you're on a
-Dash0 dev or trial environment the host is not `app.dash0.com`, and every
-link in these docs will land you in the wrong place. Write yours down here:
+Go to [dash0.com](https://dash0.com) and sign up with your email. You get
+your own organisation on the free trial — everyone in the room has their
+own, so nothing you do can confuse anyone else.
 
-> My Dash0 URL: `__________________________`
+Ideally you did this as pre-work. It takes a couple of minutes, and they're
+minutes better spent on the app.
 
-A **dataset** is where your telemetry lands. The `default` dataset is fine for
-today. If you're sharing an organisation with the rest of the room, the host
-will tell you which one is yours — using someone else's makes the next two
-hours confusing for both of you.
+**Note which region you land in.** It's in the URL and in your endpoints,
+and you'll need it in a moment.
+
+A **dataset** is where your telemetry lands. `default` is fine for today.
 
 ## Get your ingest credentials
 
@@ -40,10 +41,10 @@ one obvious right answer.
 Then **Organization settings → Auth Tokens** → create a token with ingest
 rights.
 
-> **The region matters more than you'd think.** Dash0 endpoints are
-> region-specific, and sending to the wrong region doesn't error — it just
-> silently succeeds into nowhere. If no traces show up in segment 4 and
-> everything else looks right, this is the first thing to check.
+> **Copy the host from your own Endpoints page**, not from an example in
+> these docs. Endpoints are region-specific, and a wrong region can fail
+> quietly rather than loudly — "no traces anywhere" with everything else
+> looking correct is usually this.
 
 Put them in an `.env` file at `pizza-app/.env`:
 
@@ -75,25 +76,9 @@ gRPC. Same credentials either way.
 | You get | Meaning |
 |---|---|
 | `200` | Good. Continue. |
-| `401` | Usually the token — but **not always.** If you just created it and copied it carefully, see below. |
-| `404` / connection failure | Wrong region or wrong host. |
-| `421` | Your organization is served from a different region than the one you're calling. **Not yours to fix — tell your host.** |
-
-**If you get a 401 you can't explain**, check whether the token is valid at
-all by calling a non-ingest endpoint with it:
-
-```bash
-curl -s -o /dev/null -w '%{http_code}\n' \
-  -H "Authorization: Bearer $DASH0_AUTH_TOKEN" \
-  "https://api.<region>.aws.dash0.com/api/dashboards"
-```
-
-**`200` here but `401` on ingest means your token is fine** and your
-organization isn't reachable from this region. That's a host problem, not a
-you problem — say so and stop. A wrong region can present as a flat `401`
-rather than anything region-shaped, and the Endpoints page won't reveal it,
-because it shows the region you're *served from*, not your organization's
-home region.
+| `401` | The token. Re-copy it — they're long and easy to truncate. |
+| `404` / connection failure | Wrong region in the URL. Copy the host from your own Endpoints page rather than from these docs. |
+| anything else | Grab the host. |
 
 **Stop here if this doesn't return 200.** Everything from segment 3 onward
 depends on it, and every downstream symptom will look like an
