@@ -113,6 +113,35 @@ Fix branch: `fix-2-size-rank` — `large: 3` → `Large: 3`.
 > fix branches does put the answers on the remote; if that bothers you, keep
 > them local and hand out patches instead.
 
+## About the prompts
+
+They're deliberately written as a non-expert would write them — plain
+language, no OpenTelemetry vocabulary, and **no implementation detail**.
+The point is to let Agent0 demonstrate what it works out unaided. A prompt
+that names the approach only proves the participant already knew it.
+
+This is a reversal of an earlier version, and it has a known cost. Prompt 1
+used to name the environment variables explicitly, because in the dry run
+the agent invented `DASH0_ENDPOINT` while `.env` said `DASH0_OTLP_ENDPOINT`
+and the collector crash-looped. **That failure will now happen again.**
+That's the intended trade:
+
+- It's loud, not silent — the collector dies visibly and compose prints the
+  reason.
+- Segment 3's review checklist and troubleshooting both catch it.
+- **Reviewing the agent's output is the deliverable of segment 3**, and a PR
+  with nothing wrong in it teaches nobody to review.
+
+If you'd rather protect the schedule than make the point, tell the room to
+add "use exactly the variable names already in my .env" to Prompt 1. Know
+that you're trading away the segment's best moment to save five minutes.
+
+The same principle governs Prompt 2: it says almost nothing beyond "orders
+are failing, what's going on?". The evidence discipline lives in the
+follow-ups — *how do you know*, *is that everything*, *what couldn't you
+tell* — which are the questions a curious non-expert asks anyway. The third
+one produced the best answer of the dry run.
+
 ## Running the room
 
 **Don't debug one person's agent output from the front.** Note it, hand them

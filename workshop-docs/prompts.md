@@ -1,12 +1,16 @@
 # Agent0 prompts
 
-Copy these, adjust the bracketed bits, paste. They're starting points — a
-better prompt of your own is a better outcome, and worth sharing with the
-room.
+These are written the way you'd actually ask — plainly, without jargon, and
+without telling the agent how to do its job. **That's deliberate.** You're
+here to find out what Agent0 works out on its own; a prompt that specifies
+the answer only proves you already knew it.
 
-**Where to run each one:** anything that writes code or changes configuration
-runs **in the Dash0 app**, because Agent0 over MCP reads and diagnoses only.
-Diagnosis (Prompt 2) works from either.
+Copy them, change the bracketed bits, paste. Then improve on them — a better
+question gets a better outcome, and it's worth sharing with the room.
+
+**Where to run each one:** anything that changes something — code, config, a
+check rule — runs **in the Dash0 app**, because Agent0 over MCP reads and
+diagnoses only. Asking questions (Prompt 2) works from either.
 
 ---
 
@@ -14,44 +18,27 @@ Diagnosis (Prompt 2) works from either.
 
 *Segment 3. In the Dash0 app.*
 
-Name the repository explicitly if your fork isn't called
-`otel-pizza-workshop` — the agent can't guess which one you mean.
+Name your repository if your fork isn't called `otel-pizza-workshop`.
 
 ```
-This repository is a pizza-ordering app with three Node.js/Express services
-(order-service, kitchen-service, delivery-service) and an nginx frontend, run
-with Docker Compose. It has no instrumentation at all.
+I have a pizza ordering app in this repository — three Node services and a
+web frontend, all run with Docker Compose. Right now I can't see anything
+about what it's doing when an order comes in.
 
-Add OpenTelemetry to all three Node services and export the telemetry to
-Dash0:
+Can you set it up so I can see what's happening, in Dash0? I have an
+account, and my credentials are in pizza-app/.env.
 
-- Use OpenTelemetry auto-instrumentation. I don't want manual spans in the
-  application code.
-- Give each service a correct service.name: order-service, kitchen-service,
-  delivery-service.
-- Add an OpenTelemetry Collector to docker-compose.yml, and have the services
-  export to it.
-- Have the collector export to Dash0 over OTLP gRPC at this endpoint:
-  [paste your DASH0_OTLP_GRPC_ENDPOINT value, e.g.
-  ingress.eu-west-1.aws.dash0.com:4317]
-- The auth token is in pizza-app/.env as DASH0_AUTH_TOKEN. That file is
-  gitignored, so you can't read it and you don't need to — reference the
-  environment variable. Never put the token value in any committed file.
-- Use exactly these two variable names and do not invent others:
-  DASH0_OTLP_GRPC_ENDPOINT and DASH0_AUTH_TOKEN. They already exist in my
-  .env; a name that doesn't match resolves to an empty string and the
-  collector won't start.
-- Make sure trace context propagates across the HTTP calls between services,
-  so one order produces one connected trace.
-
-Open a pull request with the changes, and explain in the PR body what you
-added to each service.
+I don't really know OpenTelemetry, so use whatever the sensible defaults
+are. I'd rather not end up with tracing code scattered all through the app
+if there's a way to avoid that. Open a pull request and tell me what you
+changed.
 ```
 
-**What good output looks like:** Dockerfile changes adding
-`@opentelemetry/auto-instrumentations-node` and `NODE_OPTIONS`, OTEL env vars
-in compose, a new collector config, and `${DASH0_AUTH_TOKEN}` — never the
-literal token.
+**Then review what comes back** — that's segment 3's actual work. Things the
+agent has to guess at, and can get wrong: which environment variable names
+you used, whether to hardcode your token, what to call each service. It
+can't read `.env`, so it **will** invent the variable names. Catching that
+in review is the exercise, not a flaw in the prompt.
 
 ---
 
@@ -60,52 +47,54 @@ literal token.
 *Segment 5. MCP or the Dash0 app.*
 
 ```
-Some orders in the pizza app are failing. Users see "Failed to process
-order" with no further detail.
+Some of my pizza orders are failing. All the website says is "Failed to
+process order", which doesn't tell me anything.
 
-Using the traces in Dash0 from the last [30 minutes], work out what is
-actually going wrong:
-
-- Which service is the failure originating in, and what is it returning?
-- Why is it returning that? Read the source in the connected repository.
-- Which orders are affected, and which succeed?
-- What proportion of requests are failing?
-
-Give me specific trace IDs for the failures you're describing so I can check
-them myself. If you find more than one distinct cause, list them separately.
-Also tell me what you could NOT determine from the telemetry.
+Can you look at the data in Dash0 and work out what's actually going wrong?
+Roughly the last [30 minutes].
 ```
 
-**Then push it.** If it reports one cause and stops:
+That's the whole prompt. Resist the urge to help it.
+
+### Follow-ups, in the order you'd naturally ask them
+
+**Ask how it knows.** This is the one that matters:
 
 ```
-That explains some of the failures. Are all of the failing traces explained
-by that cause, or is there a second one?
+How do you know? Can you point me at the actual requests you're looking at?
 ```
 
-If it's vague about the mechanism:
+**Ask whether that's the whole story:**
 
 ```
-Compare a failing trace to a successful one. Which span exists in one and not
-the other, and what does its status say?
+Is that everything, or is something else broken too?
+```
+
+**Ask what it's unsure about.** In the dry run this produced the best answer
+of the session — the agent admitted it couldn't see pizza type or size in
+the telemetry, and explained what its conclusion actually rested on instead:
+
+```
+What couldn't you tell from the data?
+```
+
+**If it's vague about the mechanism:**
+
+```
+What's different between an order that works and one that doesn't?
 ```
 
 ---
 
 ## Prompt 3 — Fix it
 
-*Segment 5, after you believe the diagnosis. In the Dash0 app, continuing the
-same thread.*
+*Segment 5, once you believe the diagnosis. In the Dash0 app, same thread.*
 
 ```
-That diagnosis matches what I see in the traces. Open a pull request that
-fixes the root cause.
+That matches what I can see. Can you fix it and open a pull request?
 
-- Fix the cause, not the symptom. Don't catch the error and return a nicer
-  message.
-- Keep the change as small as the diagnosis implies.
-- In the PR body, link the trace IDs that show the problem and say how to
-  verify the fix.
+I'd rather fix the actual problem than hide the error message. Keep the
+change small, and say in the PR how I can check that it worked.
 ```
 
 ---
@@ -115,20 +104,28 @@ fixes the root cause.
 *Segment 6. In the Dash0 app.*
 
 ```
-Create a check rule that would have caught the failure we just fixed.
+I only found this because I happened to order a pizza. I don't want to find
+out that way next time.
 
-- Alert on the error rate of order-service, not on individual errors.
-- Base the threshold on the error rate actually in the data for the period
-  before the fix was merged — tell me what that rate was rather than
-  assuming one. It depended entirely on what people happened to order.
-- The threshold has to be below that rate, but high enough not to fire on
-  ordinary noise.
-- Tell me what threshold and what evaluation window you chose, and why.
-- Before creating it, tell me whether this rule would have fired during the
-  period when the bug was live, based on the data already in Dash0.
+Can you set up an alert that would have caught it? I don't know what a
+sensible threshold is — what do you suggest, and would it actually have
+gone off while this was broken?
 ```
 
-Argue with the answer. That argument is the point of the segment.
+**Then argue with it.** The first answer is rarely the best one. These three
+questions each improved the rule in the dry run:
+
+```
+How many orders need to happen before that percentage means anything?
+```
+
+```
+What happens if it's quiet and two orders fail?
+```
+
+```
+Is anything getting counted in that number that shouldn't be?
+```
 
 ---
 
@@ -137,34 +134,31 @@ Argue with the answer. That argument is the point of the segment.
 *Segment 7. In the Dash0 app.*
 
 ```
-Connect the check rule you just created to an automation: when it fires,
-investigate the failure using the traces from the alert window, and open a
-draft pull request on the connected repository with a proposed fix.
+Can you make it so that when that alert goes off, you look into it and open
+a pull request with a fix — without me having to ask?
 
-- The PR must be a draft. A human merges.
-- The PR body needs the trace IDs the finding is based on, and the measured
-  error rate.
-- If the investigation can't identify a root cause with evidence, say so in
-  the PR instead of guessing.
-
-Walk me through what you've set up before you enable it.
+Keep the PR as a draft. I want to look at it before anything gets merged.
+Show me what you've set up before you turn it on.
 ```
 
 ---
 
 ## Writing your own
 
-The prompts that worked here have four things in common, and they transfer to
-any agent against any telemetry:
+What these have in common, and it transfers to any agent against any
+telemetry:
 
-1. **Say what you observed, not what you concluded.** "Orders are failing with
-   a 500" leaves the diagnosis open. "The delivery service is broken" hands
-   the agent your assumption and it will usually agree with you.
-2. **Demand evidence.** Asking for trace IDs changes the answer, not just its
-   presentation — it's harder to produce a confident guess when you have to
-   attach a link.
-3. **Bound it.** A timeframe and a service narrow the search. Without them
-   you get generalities.
-4. **Separate diagnosis from action.** Two prompts, not one. It gives you a
-   decision point where you can still disagree — which is the only place your
-   judgement actually enters the loop.
+1. **Say what you saw, not what you think it means.** "Orders are failing
+   with a 500" leaves the question open. "The delivery service is broken"
+   hands over your assumption, and the agent will usually agree with you —
+   whether or not you were right.
+2. **Don't specify the answer.** If you catch yourself naming the file, the
+   function or the fix, you're testing your own diagnosis rather than the
+   agent's.
+3. **Ask how it knows.** A finding you can click into is evidence. One
+   stated confidently with nothing attached is a guess with good grammar,
+   and the two read identically.
+4. **Ask what it couldn't determine.** Agents will tell you, if you ask.
+   It's the fastest way to find the gap in your own instrumentation.
+5. **Separate diagnosing from fixing.** Two prompts, not one — that gap is
+   the only point in the process where your judgement gets a say.

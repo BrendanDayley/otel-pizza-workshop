@@ -12,8 +12,12 @@ disagree with the finding before any code changes.
 **Prompt 2** from [prompts.md](prompts.md). You can run this over MCP from
 your editor or in the Dash0 app — diagnosis is read-only either way.
 
-You're asking: orders are failing, here's the timeframe, what's actually
-happening and why? And critically — **cite the traces**.
+You're asking almost nothing: orders are failing, here's the timeframe,
+what's going on? **Don't tell it where to look.** You want to find out what
+it works out unaided — if you point it at a service, you've done the
+diagnosis and it will agree with you.
+
+The evidence comes next, from the follow-ups.
 
 ## Judge the answer before you accept it
 
@@ -47,21 +51,21 @@ Segment 1 gave you **two** distinct failures that look identical from the
 browser. If the agent reports one and stops, that's a partial answer — push
 it:
 
-> That explains the Hawaiian orders. What about the Large ones?
+> Is that everything, or is something else broken too?
 
-Or the other way round, depending on what it found first. Getting the agent to
-recognise it has explained *some* of the failures and not all of them is the
-most realistic moment in this workshop. Production incidents are rarely one
-bug.
+Note what that question *doesn't* do: it doesn't tell the agent what the
+second thing is, or even that there definitely is one. Getting it to
+recognise that it has explained *some* of the failures and not all of them
+is the most realistic moment in this workshop. Production incidents are
+rarely one bug.
 
 ## If it's stuck
 
-Nudge with what the telemetry shows rather than with the answer:
+Ask about what you can see, not about what you suspect:
 
-> Which service returns the non-200 first, and what does it return?
+> What's different between an order that works and one that doesn't?
 
-> Compare a failing trace to a successful one. Which span exists in one and
-> not the other?
+> Which part of the system does the failure start in?
 
 Notice the limitation from segment 4 biting here: **the spans don't carry the
 pizza type or size.** The agent can see *that* a request failed, not *what was

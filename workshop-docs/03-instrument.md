@@ -10,9 +10,10 @@ You are not going to write instrumentation. You're going to ask for it,
 In the **Dash0 app** — this step writes code, so it can't be MCP — start a new
 Agent0 thread and use **Prompt 1** from [prompts.md](prompts.md).
 
-Roughly, you're asking for: OpenTelemetry auto-instrumentation on all three
-Node services, a collector in the compose file, the exporter pointed at your
-Dash0 endpoint, credentials from `.env`, and a PR.
+You're asking, in plain terms, to be able to see what the app is doing —
+and leaving the *how* to the agent. It has to decide on its own that this
+means auto-instrumentation, a collector, an exporter and credentials
+handling. Whether it decides well is what you're about to review.
 
 While it works, read the next section — you'll want it ready.
 
