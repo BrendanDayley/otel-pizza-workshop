@@ -109,7 +109,7 @@ In this order, it's almost always one of these:
 
 [More in troubleshooting.md](troubleshooting.md)
 
-## Stuck at minute 18?
+## Still no traces, and the room is moving on?
 
 **Ask the host.** They have a working reference implementation and will get
 it onto your machine — as a patch, a branch, or over your shoulder. Then:
