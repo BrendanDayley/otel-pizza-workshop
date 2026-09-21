@@ -59,11 +59,14 @@ An agent will always give you an answer. Your job is deciding whether it's
    finding stated confidently with no reference is a guess with good grammar.
    Open the trace. Does it show what the agent says it shows?
 
-   **How to open one:** Agent0 hands you bare hex strings, not links, and
-   there's no URL you can construct from one — guessing
-   `/traces/<id>` gets you a 404. Go to **Tracing**, click the filter
-   (funnel) icon, paste the ID, and it matches on `otel.trace.id`. Do this
-   once now, before you need it under time pressure.
+   **Click through, don't just read.** In the Dash0 app the answer comes
+   with the traces embedded as interactive widgets — open them, follow the
+   spans, and check the evidence actually says what the prose around it
+   claims. That's the whole exercise, and it takes seconds.
+
+   (If you asked over MCP from your editor instead, you'll get bare trace
+   IDs. Paste one into the filter on the **Tracing** page — it matches on
+   `otel.trace.id`.)
 
 2. **Does the failure rate match?** If the agent says "all orders are
    failing" and two thirds of yours succeeded, it's pattern-matched to

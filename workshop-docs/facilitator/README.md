@@ -288,11 +288,12 @@ bite, and the agent hit exactly that wall and said so instead of asserting.
 It also declined to read `workshop-docs/`, announcing the exclusion
 out loud. The `AGENTS.md` rule works.
 
-One real gap it exposed, now fixed in segment 5 and troubleshooting: the
-docs tell participants to "open the trace ID", and there is **no URL you
-can construct** — `/traces/<id>` 404s. It's Tracing → funnel icon → paste,
-matching on `otel.trace.id`. Without that sentence the entire
-"verify, don't trust" discipline is unusable.
+One caveat on the dry-run notes: the agent reported that Agent0 returns
+bare trace IDs with no way to open them. **That's an artefact of how it was
+working, not how the app behaves** — in the Dash0 app the answer embeds
+interactive trace widgets that participants click through directly. Bare
+IDs are what you get over MCP from an editor. Segment 5 and troubleshooting
+now say so; the notes file still contains the original claim.
 
 ### Segments 6 and 7 — the loop closed
 
