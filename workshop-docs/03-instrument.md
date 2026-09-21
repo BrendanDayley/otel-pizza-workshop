@@ -20,9 +20,10 @@ Can you set it up so I can see what's happening, in Dash0? I have an
 account, and my credentials are in pizza-app/.env.
 
 I don't really know OpenTelemetry, so use whatever the sensible defaults
-are. I'd rather not end up with tracing code scattered all through the app
-if there's a way to avoid that. Open a pull request and tell me what you
-changed.
+are. If there's a way to do this automatically, without me having to add
+tracing code all over the app, I'd much rather have that.
+
+Open a pull request and tell me what you changed.
 ```
 
 Notice what that doesn't say. You're asking, in plain terms, to see what
