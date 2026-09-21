@@ -156,13 +156,10 @@ a hypothesis no matter how well written it is.
 
 ## I'm behind and the room has moved on
 
-Take the fallback branch for the segment and rejoin. You lose the experience
-of that one segment, not the rest of the workshop:
+**Ask the host for the reference version of the segment you're stuck on.**
+They have working ones for the agent-driven steps and can get you caught up
+in a couple of minutes.
 
-```bash
-git fetch origin
-git branch -r
-```
-
-Ask the host which branch you want — and don't spend the next segment
-debugging the last one.
+You lose the experience of that one segment, not the rest of the workshop —
+and every segment after it depends on this one having worked. Don't spend
+the next segment debugging the last one.

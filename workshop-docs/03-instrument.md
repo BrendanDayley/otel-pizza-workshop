@@ -94,17 +94,15 @@ In this order, it's almost always one of these:
 
 ## Stuck at minute 18?
 
-Take the fallback. A working reference implementation exists — **ask the
-host for the branch name**, then:
+**Ask the host.** They have a working reference implementation and will get
+it onto your machine — as a patch, a branch, or over your shoulder. Then:
 
 ```bash
-git fetch origin
-git checkout -b my-instrumentation origin/<branch-the-host-gives-you>
 cd pizza-app && docker compose up -d --build
 ```
 
-You'll still need your own `.env` — the reference has the configuration, not
-your credentials.
+You'll still need your own `.env` — the reference carries the configuration,
+not your credentials.
 
 You'll rejoin the group with data flowing. Come back to your agent's output
 later — what it got wrong is genuinely interesting, just not right now.

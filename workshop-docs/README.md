@@ -72,10 +72,11 @@ you're in.
 It will, for someone, at some point. Twenty-five agents produce twenty-five
 different instrumentations and a few of them are wrong.
 
-**Don't burn the segment debugging it.** Every segment that depends on agent
-output has a fallback branch you can check out in thirty seconds to rejoin the
-group. Take it, and come back to the interesting failure afterwards — an agent
-that produced something wrong is worth understanding, just not at the cost of
-the next forty minutes.
+**Don't burn the segment debugging it. Ask the host.** They have working
+reference versions of the agent-driven steps and can get you back with the
+group in a couple of minutes. That's what they're there for, and using it
+is not falling behind.
 
-Ask the host. That's what they're there for.
+Come back to the interesting failure afterwards — an agent that produced
+something wrong is worth understanding, just not at the cost of the next
+forty minutes.

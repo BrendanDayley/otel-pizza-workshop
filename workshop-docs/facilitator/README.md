@@ -103,15 +103,29 @@ Fix branch: `fix-2-size-rank` — `large: 3` → `Large: 3`.
 | `solution` | Reference instrumentation, segment 3 fallback | local only |
 | `upstream/main` | Julia Morgado's original, for diffing | upstream |
 
-> **Pre-flight:** the participant docs point at `origin/solution` and the two
-> fix branches as fallbacks. **Push them before the day** or those fallbacks
-> don't exist:
-> ```bash
-> git push origin solution fix-1-pineapple fix-2-size-rank
-> ```
-> Pushing `solution` is safe — it's instrumentation, not fixes. Pushing the
-> fix branches does put the answers on the remote; if that bothers you, keep
-> them local and hand out patches instead.
+**Only `main` is pushed, deliberately.** The branch names alone give the
+bugs away — a participant who runs `git branch -r` and sees
+`fix-1-pineapple` has had segment 5 spoiled — so the answers stay off the
+public remote.
+
+**This makes you the fallback.** The participant docs no longer promise a
+branch they can check out; they say "ask the host", in segments 3 and 5 and
+in troubleshooting. Be ready to deliver, and decide *before* the day how:
+
+```bash
+# patches you can AirDrop / paste / put on a USB stick
+git format-patch main..solution        -o ~/workshop-fallbacks/instrumentation
+git format-patch main..fix-1-pineapple -o ~/workshop-fallbacks/fix-1
+git format-patch main..fix-2-size-rank -o ~/workshop-fallbacks/fix-2
+```
+
+Alternatives, if patches feel clumsy in the room: push the branches under
+neutral names on the morning (`fallback-a`, `fallback-b`) and delete them
+afterwards, or just sit down next to the person and paste the diff.
+
+**What there is no fallback for:** segments 6 and 7. If someone's check
+rule or automation goes wrong there's no branch that helps — the recovery
+is you, at their laptop, or letting them watch a neighbour.
 
 ## About the prompts
 
