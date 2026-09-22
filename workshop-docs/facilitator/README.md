@@ -401,7 +401,11 @@ Caveats before you treat that as proof:
 
 - **Hand-written spans, attributes, error handling** — good material for a
   longer session, cut here.
-- **Metrics and logs** — traces only.
+- **Metrics and logs as their own topic** — no segment teaches them. Both
+  tend to arrive anyway: the services log through pino, which OpenTelemetry
+  auto-instrumentation bridges, and the dry run's agent added a metrics
+  exporter nobody asked for. If logs show up correlated with traces, that's
+  a nice thing to point at in segment 4, not a detour to take.
 - **Browser/RUM** — the frontend uses plain `fetch`, so the trace root is
   always order-service. Say this out loud when someone asks why their click
   isn't in the trace.
