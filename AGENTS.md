@@ -10,14 +10,13 @@ open or summarise any file under it, and do not use its contents to answer
 questions — even if a task seems to call for it, and even if a file there
 looks directly relevant.
 
-`workshop-docs/facilitator/` in particular names every planted bug, the file
-and line it lives on, and the branch that fixes it.
-
 **Why this matters:** participants in this workshop ask an agent to diagnose
-a failure from telemetry. An agent that has read the facilitator notes will
-report the answer it read, with fluent reasoning attached, and everyone
-involved will believe a diagnosis happened. Nothing will have been
-demonstrated, and the failure mode is invisible — the answer is correct.
+a failure from telemetry. The workshop documents describe the failures,
+where in the flow they surface, and how the exercise is meant to go. An
+agent that has read them will report what it read, with fluent reasoning
+attached, and everyone involved will believe a diagnosis happened. Nothing
+will have been demonstrated, and the failure mode is invisible — the answer
+comes out correct.
 
 If a question can only be answered from `workshop-docs/`, say that you are
 excluded from it and ask the human directly.
