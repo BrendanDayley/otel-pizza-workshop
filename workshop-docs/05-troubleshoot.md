@@ -144,8 +144,8 @@ one of the two bugs. Go back to step 1 with the failure that remains.
 
 ## The fallback
 
-**Ask the host.** Reference fixes exist, but the branch names give away both
-root causes, so they're not printed here — reading them would end the
+**Ask the host.** Both fixes are a couple of lines each and the host knows
+them — but they won't be printed here, because reading them would end the
 exercise you're in the middle of.
 
 A stuck agent is usually two nudges away, and watching those two nudges work

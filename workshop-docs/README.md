@@ -73,10 +73,9 @@ you're in.
 It will, for someone, at some point. Twenty-five agents produce twenty-five
 different instrumentations and a few of them are wrong.
 
-**Don't burn the segment debugging it. Ask the host.** They have working
-reference versions of the agent-driven steps and can get you back with the
-group in a couple of minutes. That's what they're there for, and using it
-is not falling behind.
+**Don't burn the segment debugging it. Ask the host.** Getting you back with
+the group is what they're there for, and using them is not falling behind —
+a working copy off someone else's laptop counts.
 
 Come back to the interesting failure afterwards — an agent that produced
 something wrong is worth understanding, just not at the cost of the next

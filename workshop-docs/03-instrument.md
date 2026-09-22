@@ -111,8 +111,9 @@ In this order, it's almost always one of these:
 
 ## Still no traces, and the room is moving on?
 
-**Ask the host.** They have a working reference implementation and will get
-it onto your machine — as a patch, a branch, or over your shoulder. Then:
+**Ask the host.** The fastest route back is somebody else's working setup —
+a patch, a diff off a neighbour's machine, or the host over your shoulder.
+Then:
 
 ```bash
 cd pizza-app && docker compose up -d --build

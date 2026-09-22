@@ -154,9 +154,9 @@ at any, treat the finding as a hypothesis no matter how well written it is.
 
 ## I'm behind and the room has moved on
 
-**Ask the host for the reference version of the segment you're stuck on.**
-They have working ones for the agent-driven steps and can get you caught up
-in a couple of minutes.
+**Ask the host.** Say which segment you're stuck on — they'll get you a
+working copy of it, from their machine or a neighbour's, in a couple of
+minutes.
 
 You lose the experience of that one segment, not the rest of the workshop —
 and every segment after it depends on this one having worked. Don't spend
