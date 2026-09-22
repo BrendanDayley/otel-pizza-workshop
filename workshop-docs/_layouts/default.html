@@ -103,19 +103,24 @@ document.querySelectorAll('.prose table').forEach(function (table) {
   wrap.appendChild(table);
 });
 
-document.querySelectorAll('.prose li').forEach(function (li) {
-  var first = li.firstChild;
-  if (!first || first.nodeType !== 3) return;
-  var m = first.nodeValue.match(/^\[( |x|X)\]\s/);
-  if (!m) return;
-  first.nodeValue = first.nodeValue.slice(m[0].length);
-  var box = document.createElement('input');
-  box.type = 'checkbox';
-  box.className = 'task';
-  box.checked = m[1] !== ' ';
-  li.insertBefore(box, first);
-  li.classList.add('task-item');
-  li.closest('ul').classList.add('task-list');
+var boxes = document.querySelectorAll('.prose .task-list-item-checkbox');
+var key = 'workshop-checklist:' + location.pathname;
+var saved = [];
+try {
+  saved = JSON.parse(localStorage.getItem(key) || '[]');
+} catch (e) {}
+
+boxes.forEach(function (box, i) {
+  box.disabled = false;
+  if (saved[i]) box.checked = true;
+  box.addEventListener('change', function () {
+    try {
+      localStorage.setItem(
+        key,
+        JSON.stringify(Array.prototype.map.call(boxes, function (b) { return b.checked; }))
+      );
+    } catch (e) {}
+  });
 });
 </script>
 
