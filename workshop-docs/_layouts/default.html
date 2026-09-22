@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+{% assign nav = site.segments %}
+{% assign current = "" %}
+{% for s in nav %}{% if s.url == page.url %}{% assign current = s %}{% assign idx = forloop.index0 %}{% endif %}{% endfor %}
+{% if current == "" %}{% for s in site.reference %}{% if s.url == page.url %}{% assign current = s %}{% endif %}{% endfor %}{% endif %}
+
+{% if current != "" and current.url != "/" %}
+<title>{{ current.title }} · {{ site.title }}</title>
+{% else %}
+<title>{{ site.title }}</title>
+{% endif %}
+<meta name="description" content="{{ site.description }}">
+<link rel="icon" href="{{ '/assets/img/dash0-symbol.svg' | relative_url }}" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Martian+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+</head>
+<body>
+
+<a class="skip" href="#content">Skip to content</a>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="https://www.dash0.com/" rel="noopener">
+      <img src="{{ '/assets/img/dash0-wordmark.svg' | relative_url }}" alt="Dash0" height="18">
+    </a>
+    <span class="brand-divider" aria-hidden="true"></span>
+    <a class="brand-label" href="{{ '/' | relative_url }}">OpenTelemetry Workshop</a>
+    <a class="topbar-repo" href="{{ site.repo }}" rel="noopener">Repository</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="Workshop segments">
+    <p class="nav-heading">Segments</p>
+    <ul class="nav-list">
+      {% for s in nav %}
+      <li>
+        <a class="nav-link{% if s.url == page.url %} active{% endif %}" href="{{ s.url | relative_url }}">
+          {% if s.num != "" %}<span class="nav-num">{{ s.num }}</span>{% endif %}
+          <span class="nav-title">{{ s.title }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="nav-heading">Reference</p>
+    <ul class="nav-list">
+      {% for s in site.reference %}
+      <li>
+        <a class="nav-link{% if s.url == page.url %} active{% endif %}" href="{{ s.url | relative_url }}">
+          <span class="nav-title">{{ s.title }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </nav>
+
+  <main id="content">
+    {% if current != "" and current.num != "" and current.num %}
+    <p class="eyebrow">Segment {{ current.num }}</p>
+    {% endif %}
+    <article class="prose">
+      {{ content }}
+    </article>
+
+    {% if idx %}
+    <nav class="pager" aria-label="Segment navigation">
+      {% assign prev_i = idx | minus: 1 %}
+      {% assign next_i = idx | plus: 1 %}
+      {% if idx > 0 %}
+      <a class="pager-link prev" href="{{ nav[prev_i].url | relative_url }}">
+        <span class="pager-dir">Previous</span>
+        <span class="pager-title">{{ nav[prev_i].title }}</span>
+      </a>
+      {% else %}<span></span>{% endif %}
+      {% if next_i < nav.size %}
+      <a class="pager-link next" href="{{ nav[next_i].url | relative_url }}">
+        <span class="pager-dir">Next</span>
+        <span class="pager-title">{{ nav[next_i].title }}</span>
+      </a>
+      {% endif %}
+    </nav>
+    {% endif %}
+
+    <footer class="foot">
+      <span>Built by <a href="https://www.dash0.com/" rel="noopener">Dash0</a>.</span>
+      <span>Based on the pizza app by <a href="https://github.com/juliafmorgado/otel-pizza-workshop" rel="noopener">Julia Morgado</a>.</span>
+    </footer>
+  </main>
+</div>
+
+<script>
+document.querySelectorAll('.prose table').forEach(function (table) {
+  var wrap = document.createElement('div');
+  wrap.className = 'table-scroll';
+  table.parentNode.insertBefore(wrap, table);
+  wrap.appendChild(table);
+});
+
+document.querySelectorAll('.prose li').forEach(function (li) {
+  var first = li.firstChild;
+  if (!first || first.nodeType !== 3) return;
+  var m = first.nodeValue.match(/^\[( |x|X)\]\s/);
+  if (!m) return;
+  first.nodeValue = first.nodeValue.slice(m[0].length);
+  var box = document.createElement('input');
+  box.type = 'checkbox';
+  box.className = 'task';
+  box.checked = m[1] !== ' ';
+  li.insertBefore(box, first);
+  li.classList.add('task-item');
+  li.closest('ul').classList.add('task-list');
+});
+</script>
+
+</body>
+</html>

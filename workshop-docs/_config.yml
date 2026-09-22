@@ -1,6 +1,6 @@
 title: OpenTelemetry Pizza Workshop
 description: An agent-driven OpenTelemetry workshop, in seven segments.
-theme: jekyll-theme-cayman
+repo: https://github.com/dash0hq/otel-pizza-workshop
 
 plugins:
   - jekyll-optional-front-matter
@@ -13,3 +13,41 @@ relative_links:
 
 readme_index:
   with_frontmatter: true
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+segments:
+  - num: ""
+    title: Overview
+    url: /
+  - num: "01"
+    title: Run it. Watch it break.
+    url: /01-run-it.html
+  - num: "02"
+    title: Connect Dash0
+    url: /02-connect-dash0.html
+  - num: "03"
+    title: Let Agent0 instrument it
+    url: /03-instrument.html
+  - num: "04"
+    title: Find your way around
+    url: /04-explore.html
+  - num: "05"
+    title: Let Agent0 troubleshoot
+    url: /05-troubleshoot.html
+  - num: "06"
+    title: Alert on it
+    url: /06-alert.html
+  - num: "07"
+    title: Close the loop
+    url: /07-close-the-loop.html
+
+reference:
+  - title: Prompts
+    url: /prompts.html
+  - title: Troubleshooting
+    url: /troubleshooting.html
