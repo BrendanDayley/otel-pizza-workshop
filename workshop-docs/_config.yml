@@ -1,0 +1,15 @@
+title: OpenTelemetry Pizza Workshop
+description: An agent-driven OpenTelemetry workshop, in seven segments.
+theme: jekyll-theme-cayman
+
+plugins:
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: false
+
+readme_index:
+  with_frontmatter: true
