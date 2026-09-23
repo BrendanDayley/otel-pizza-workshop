@@ -39,7 +39,7 @@ cost the room nothing at home and twenty minutes here.
 
 - [ ] **Docker Desktop** installed and running
 - [ ] **Ports free:** 3000, 3001, 3002, 8080, and 4317/4318 for later
-- [ ] **Forked** <https://github.com/dash0hq/otel-pizza-workshop> and cloned
+- [ ] **Forked** <https://github.com/dash0-community/otel-pizza-workshop> and cloned
       *your fork* — every segment from 3 onward opens a PR against a repo you
       need to own
 - [ ] **A Dash0 account** — sign up with your email at

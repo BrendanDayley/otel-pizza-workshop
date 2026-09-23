@@ -1,6 +1,6 @@
 title: OpenTelemetry Pizza Workshop
 description: An agent-driven OpenTelemetry workshop, in seven segments.
-repo: https://github.com/dash0hq/otel-pizza-workshop
+repo: https://github.com/dash0-community/otel-pizza-workshop
 
 plugins:
   - jekyll-optional-front-matter

@@ -101,12 +101,12 @@ Agent0:
 - read your source when it's diagnosing a failure (segment 5)
 - open pull requests against your fork (segments 3, 5 and 7)
 
-If you forked from `dash0hq/otel-pizza-workshop` rather than cloning it
+If you forked from `dash0-community/otel-pizza-workshop` rather than cloning it
 directly, you own a remote and this will work. If you cloned the Dash0 repo
 directly, stop and fork now — you can't open PRs against a repo you don't own:
 
 ```bash
-gh repo fork dash0hq/otel-pizza-workshop --remote
+gh repo fork dash0-community/otel-pizza-workshop --remote
 ```
 
 ## Optional: MCP from your editor

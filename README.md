@@ -16,7 +16,7 @@ covers getting the app running.
 **Fork first, then clone your fork.** Later stages of the workshop open pull
 requests against your repository, so you need to own the remote.
 
-1. Open <https://github.com/dash0hq/otel-pizza-workshop> and click **Fork**.
+1. Open <https://github.com/dash0-community/otel-pizza-workshop> and click **Fork**.
    Keep the default name.
 
 2. Clone your fork and keep a link to this repository:
@@ -26,7 +26,7 @@ requests against your repository, so you need to own the remote.
 git clone https://github.com/YOUR-USERNAME/otel-pizza-workshop.git
 cd otel-pizza-workshop
 
-git remote add upstream https://github.com/dash0hq/otel-pizza-workshop.git
+git remote add upstream https://github.com/dash0-community/otel-pizza-workshop.git
 git remote -v
 ```
 
