@@ -122,6 +122,78 @@ boxes.forEach(function (box, i) {
     } catch (e) {}
   });
 });
+
+var COPY_ICON =
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
+  '<rect x="5.75" y="5.75" width="8.5" height="8.5" rx="1.75"/>' +
+  '<path d="M10.25 3.75a2 2 0 0 0-2-2h-4.5a2 2 0 0 0-2 2v4.5a2 2 0 0 0 2 2"/></svg>';
+var DONE_ICON =
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">' +
+  '<path d="m2.75 8.5 3.5 3.5 7-7.5"/></svg>';
+
+document.querySelectorAll('.prose pre').forEach(function (pre) {
+  var code = pre.querySelector('code');
+  var text = (code || pre).innerText.replace(/\n$/, '');
+  if (!text.trim()) return;
+
+  var isPrompt = !!(code && code.classList.contains('language-text'));
+  var idle = isPrompt ? 'Copy prompt' : 'Copy';
+
+  var wrap = document.createElement('div');
+  wrap.className = 'code-block';
+  pre.parentNode.insertBefore(wrap, pre);
+  wrap.appendChild(pre);
+
+  var button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'copy';
+  button.setAttribute('aria-label', idle + ' to clipboard');
+  button.innerHTML = COPY_ICON + '<span>' + idle + '</span>';
+  wrap.appendChild(button);
+
+  var reset;
+
+  function flash(state, word) {
+    button.dataset.state = state;
+    button.innerHTML = (state === 'done' ? DONE_ICON : COPY_ICON) + '<span>' + word + '</span>';
+    clearTimeout(reset);
+    reset = setTimeout(function () {
+      delete button.dataset.state;
+      button.innerHTML = COPY_ICON + '<span>' + idle + '</span>';
+    }, 2000);
+  }
+
+  function legacyCopy() {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.top = '-1000px';
+    document.body.appendChild(area);
+    area.select();
+    var ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (e) {}
+    document.body.removeChild(area);
+    return ok;
+  }
+
+  function fallback() {
+    var ok = legacyCopy();
+    flash(ok ? 'done' : 'failed', ok ? 'Copied' : 'Select and copy');
+  }
+
+  button.addEventListener('click', function () {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        flash('done', 'Copied');
+      }, fallback);
+    } else {
+      fallback();
+    }
+  });
+});
 </script>
 
 </body>
