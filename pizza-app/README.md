@@ -25,6 +25,45 @@ A pizza ordering system built from three microservices and a web frontend.
 └─────────────┘     └─────────────┘     └─────────────┘
 ```
 
+## Telemetry
+
+The three Node services are instrumented with OpenTelemetry's zero-code
+instrumentation: no tracing code in the application, only a start command and a
+handful of environment variables. They send traces, metrics and logs to Dash0
+over OTLP/gRPC.
+
+Configure it once, from inside `pizza-app/`:
+
+```bash
+cp .env.template .env
+# then fill in DASH0_AUTH_TOKEN and DASH0_ENDPOINT
+```
+
+`DASH0_ENDPOINT` must be the OTLP/gRPC endpoint for your region, port `:4317`
+included — find it under **Settings → Endpoints** in Dash0. The ingress only
+accepts static `auth_*` tokens, not OAuth ones. If your network blocks port
+4317, set `DASH0_OTLP_PROTOCOL=http/protobuf` and drop `:4317` from the
+endpoint.
+
+One order produces a single trace across all three services: the frontend's
+`POST /order`, both kitchen calls, and the delivery call, as nested spans. Each
+`pino` log line is exported too, carrying the trace and span ID of the request
+that wrote it, so a log and the trace it came from are two clicks apart.
+
+If the variables are missing, the services still run and serve orders; they just
+log export failures. `OTEL_SDK_DISABLED=true` turns instrumentation off
+entirely.
+
+### Browser monitoring (optional)
+
+Setting `DASH0_WEB_ENDPOINT` and `DASH0_WEB_AUTH_TOKEN` loads the Dash0 Web SDK
+into the frontend, which adds page loads, web vitals, JavaScript errors, and
+browser-side requests, and links each order back to its backend trace.
+
+That token is served to browsers as part of the page. Create a **separate** auth
+token for it, limited to Ingesting and to this dataset — do not reuse
+`DASH0_AUTH_TOKEN`.
+
 ## Running the App
 
 ```bash

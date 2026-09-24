@@ -8,14 +8,31 @@
 #
 # An `.env` anywhere else (the repo root, for example) is NOT read.
 
+# Shared OpenTelemetry settings for the Node services. Each service adds its own
+# OTEL_SERVICE_NAME on top of these.
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${DASH0_ENDPOINT:-https://ingress.us-west-2.aws.dash0.com:4317}
+  OTEL_EXPORTER_OTLP_PROTOCOL: ${DASH0_OTLP_PROTOCOL:-grpc}
+  OTEL_EXPORTER_OTLP_HEADERS: Authorization=Bearer ${DASH0_AUTH_TOKEN:-},Dash0-Dataset=${DASH0_DATASET:-default}
+  OTEL_RESOURCE_ATTRIBUTES: service.namespace=pizza-app,deployment.environment.name=${DASH0_ENVIRONMENT:-workshop}
+  # Only the detectors that mean anything in a container. The cloud ones probe
+  # metadata endpoints that do not exist here and time out on every start.
+  OTEL_NODE_RESOURCE_DETECTORS: env,host,os,process,serviceinstance,container
+  OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
+  OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-otlp}
+  OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-otlp}
+  OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
+
 services:
   order-service:
     build: ./order-service
     ports:
       - "3000:3000"
     environment:
-      - KITCHEN_SERVICE_URL=http://kitchen-service:3001
-      - DELIVERY_SERVICE_URL=http://delivery-service:3002
+      <<: *otel-env
+      OTEL_SERVICE_NAME: order-service
+      KITCHEN_SERVICE_URL: http://kitchen-service:3001
+      DELIVERY_SERVICE_URL: http://delivery-service:3002
     healthcheck:
       test:
         - CMD
@@ -37,7 +54,9 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - SLOW_KITCHEN=${SLOW_KITCHEN:-false}
+      <<: *otel-env
+      OTEL_SERVICE_NAME: kitchen-service
+      SLOW_KITCHEN: ${SLOW_KITCHEN:-false}
     healthcheck:
       test:
         - CMD
@@ -54,7 +73,9 @@ services:
     ports:
       - "3002:3002"
     environment:
-      - NO_DRIVERS=${NO_DRIVERS:-false}
+      <<: *otel-env
+      OTEL_SERVICE_NAME: delivery-service
+      NO_DRIVERS: ${NO_DRIVERS:-false}
     healthcheck:
       test:
         - CMD
@@ -70,6 +91,16 @@ services:
     build: ./frontend
     ports:
       - "8080:80"
+    environment:
+      # Browser monitoring is optional and stays off unless both of these are
+      # set. The token below is served to browsers, so use a separate
+      # ingest-only token - not the one the services use.
+      DASH0_WEB_ENDPOINT: ${DASH0_WEB_ENDPOINT:-}
+      DASH0_WEB_AUTH_TOKEN: ${DASH0_WEB_AUTH_TOKEN:-}
+      DASH0_WEB_SERVICE_NAME: ${DASH0_WEB_SERVICE_NAME:-pizza-frontend}
+      DASH0_WEB_SDK_VERSION: ${DASH0_WEB_SDK_VERSION:-0.27.0}
+      DASH0_DATASET: ${DASH0_DATASET:-default}
+      DASH0_ENVIRONMENT: ${DASH0_ENVIRONMENT:-workshop}
     depends_on:
       order-service:
         condition: service_healthy

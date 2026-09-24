@@ -8,6 +8,9 @@
          Set it explicitly if the Order Service is not on the machine serving this page,
          e.g. content="https://my-vm.example.com:3000" -->
     <meta name="order-api-url" content="">
+    <!-- Browser monitoring. Written at container start from the DASH0_WEB_*
+         variables in pizza-app/.env; a no-op when they are not set. -->
+    <script src="/dash0-init.js"></script>
     <style>
         * {
             margin: 0;
