@@ -1,0 +1,93 @@
+# OpenTelemetry Collector configuration for the pizza app.
+#
+# The three Node services send OTLP to this collector instead of straight to
+# Dash0, and the collector is the only thing that holds the Dash0 credentials
+# and talks to the internet. It also collects per-container CPU, memory,
+# network and disk metrics from the Docker daemon, which the application SDKs
+# cannot see on their own.
+
+receivers:
+  # Where the three Node services send their traces, metrics and logs.
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Per-container infrastructure metrics, read from the Docker daemon.
+  #
+  # If your Docker socket is somewhere else, or not readable, comment this
+  # receiver out AND remove `docker_stats` from the metrics pipeline below.
+  # The collector refuses to start if a configured receiver cannot initialise,
+  # so leaving one half configured takes the whole stack down with it.
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    container_labels_to_metric_labels:
+      com.docker.compose.service: compose.service
+      com.docker.compose.project: compose.project
+
+processors:
+  # Keeps the collector from ballooning if Dash0 is briefly unreachable.
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+
+  # Adds host and container identity to everything passing through.
+  resourcedetection:
+    detectors: [env, system, docker]
+    system:
+      hostname_sources: [os]
+    timeout: 5s
+
+  batch:
+    send_batch_size: 512
+    send_batch_max_size: 1024
+    timeout: 5s
+
+exporters:
+  # Dash0 over OTLP/gRPC. DASH0_ENDPOINT must include the :4317 port.
+  otlp/dash0:
+    endpoint: ${env:DASH0_ENDPOINT}
+    headers:
+      Authorization: "Bearer ${env:DASH0_AUTH_TOKEN}"
+      Dash0-Dataset: "${env:DASH0_DATASET}"
+    retry_on_failure:
+      enabled: true
+    sending_queue:
+      enabled: true
+
+  # If your network blocks outbound 4317, swap the exporter: comment out
+  # otlp/dash0 above, uncomment this, replace otlp/dash0 with otlphttp/dash0 in
+  # all three pipelines, and drop the :4317 port from DASH0_ENDPOINT.
+  #
+  # otlphttp/dash0:
+  #   endpoint: ${env:DASH0_ENDPOINT}
+  #   headers:
+  #     Authorization: "Bearer ${env:DASH0_AUTH_TOKEN}"
+  #     Dash0-Dataset: "${env:DASH0_DATASET}"
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlp/dash0]
+    metrics:
+      receivers: [otlp, docker_stats]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlp/dash0]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, batch]
+      exporters: [otlp/dash0]
+  telemetry:
+    logs:
+      level: info

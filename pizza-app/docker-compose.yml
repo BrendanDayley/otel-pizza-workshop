@@ -10,10 +10,13 @@
 
 # Shared OpenTelemetry settings for the Node services. Each service adds its own
 # OTEL_SERVICE_NAME on top of these.
+#
+# The services send to the collector, not to Dash0. The collector holds the
+# credentials and is the only container that talks to the internet, so no
+# Authorization header is needed on this hop.
 x-otel-env: &otel-env
-  OTEL_EXPORTER_OTLP_ENDPOINT: ${DASH0_ENDPOINT:-https://ingress.us-east-2.aws.dash0.com:4317}
-  OTEL_EXPORTER_OTLP_PROTOCOL: ${DASH0_OTLP_PROTOCOL:-grpc}
-  OTEL_EXPORTER_OTLP_HEADERS: Authorization=Bearer ${DASH0_AUTH_TOKEN:-},Dash0-Dataset=${DASH0_DATASET:-default}
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  OTEL_EXPORTER_OTLP_PROTOCOL: grpc
   OTEL_RESOURCE_ATTRIBUTES: service.namespace=pizza-app,deployment.environment.name=${DASH0_ENVIRONMENT:-workshop}
   # Only the detectors that mean anything in a container. The cloud ones probe
   # metadata endpoints that do not exist here and time out on every start.
@@ -24,6 +27,29 @@ x-otel-env: &otel-env
   OTEL_SDK_DISABLED: ${OTEL_SDK_DISABLED:-false}
 
 services:
+  # Receives OTLP from the three services, adds host/container identity,
+  # collects per-container metrics from the Docker daemon, and forwards
+  # everything to Dash0. The only container holding the Dash0 token.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    # Needed to read the Docker socket for container metrics. Drop this (and
+    # the docker_stats receiver) if you would rather not run it as root.
+    user: "0:0"
+    environment:
+      DASH0_ENDPOINT: ${DASH0_ENDPOINT:-https://ingress.us-east-1.aws.dash0.com:4317}
+      DASH0_AUTH_TOKEN: ${DASH0_AUTH_TOKEN:?set DASH0_AUTH_TOKEN in pizza-app/.env}
+      DASH0_DATASET: ${DASH0_DATASET:-default}
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      # Health endpoint, for `curl localhost:13133` from the host. The image
+      # ships no shell tools, so this is checked from outside rather than with
+      # a compose healthcheck.
+      - "13133:13133"
+    restart: unless-stopped
+
   order-service:
     build: ./order-service
     ports:
@@ -44,6 +70,8 @@ services:
       retries: 12
       start_period: 5s
     depends_on:
+      otel-collector:
+        condition: service_started
       kitchen-service:
         condition: service_healthy
       delivery-service:
@@ -67,6 +95,9 @@ services:
       timeout: 3s
       retries: 12
       start_period: 5s
+    depends_on:
+      otel-collector:
+        condition: service_started
 
   delivery-service:
     build: ./delivery-service
@@ -86,6 +117,9 @@ services:
       timeout: 3s
       retries: 12
       start_period: 5s
+    depends_on:
+      otel-collector:
+        condition: service_started
 
   frontend:
     build: ./frontend

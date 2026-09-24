@@ -56,6 +56,7 @@ docker compose down --rmi all  # and images
 | Order Service | 3000 | Takes the order, calls the other two |
 | Kitchen Service | 3001 | Checks availability, cooks |
 | Delivery Service | 3002 | Assigns a driver |
+| OTel Collector | 13133 | Forwards telemetry to Dash0, collects container metrics |
 
 Logs from all four are interleaved in the terminal you ran `docker compose up`
 in. For one service on its own:
