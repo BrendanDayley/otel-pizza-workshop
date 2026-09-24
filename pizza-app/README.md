@@ -41,7 +41,9 @@ cp .env.template .env
 
 `DASH0_ENDPOINT` must be the OTLP/gRPC endpoint for your region, port `:4317`
 included — find it under **Settings → Endpoints** in Dash0. The ingress only
-accepts static `auth_*` tokens, not OAuth ones.
+accepts static `auth_*` tokens, not OAuth ones. If your network blocks port
+4317, set `DASH0_OTLP_PROTOCOL=http/protobuf` and drop `:4317` from the
+endpoint.
 
 One order produces a single trace across all three services: the frontend's
 `POST /order`, both kitchen calls, and the delivery call, as nested spans. Each
